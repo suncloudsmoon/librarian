@@ -1,0 +1,1179 @@
+{
+    "type": "lcc",
+    "data": [
+        {
+            "code": "A",
+            "name": "General Works",
+            "children": [
+                {
+                    "code": "A",
+                    "name": "General Works",
+                    "children": []
+                },
+                {
+                    "code": "AC",
+                    "name": "Collections. Series. Collected works",
+                    "children": []
+                },
+                {
+                    "code": "AE",
+                    "name": "Encyclopedias",
+                    "children": []
+                },
+                {
+                    "code": "AG",
+                    "name": "Dictionaries and other general reference works",
+                    "children": []
+                },
+                {
+                    "code": "AI",
+                    "name": "Indexes",
+                    "children": []
+                },
+                {
+                    "code": "AM",
+                    "name": "Museums. Collectors and collecting",
+                    "children": []
+                },
+                {
+                    "code": "AN",
+                    "name": "Newspapers",
+                    "children": []
+                },
+                {
+                    "code": "AP",
+                    "name": "Periodicals",
+                    "children": []
+                },
+                {
+                    "code": "AS",
+                    "name": "Academies and learned societies",
+                    "children": []
+                },
+                {
+                    "code": "AY",
+                    "name": "Yearbooks. Almanacs. Directories",
+                    "children": []
+                },
+                {
+                    "code": "AZ",
+                    "name": "History of scholarship and learning. The humanities",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "B",
+            "name": "Philosophy. Psychology. Religion",
+            "children": [
+                {
+                    "code": "B",
+                    "name": "Philosophy (General)",
+                    "children": []
+                },
+                {
+                    "code": "BC",
+                    "name": "Logic",
+                    "children": []
+                },
+                {
+                    "code": "BD",
+                    "name": "Speculative philosophy",
+                    "children": []
+                },
+                {
+                    "code": "BF",
+                    "name": "Psychology",
+                    "children": []
+                },
+                {
+                    "code": "BH",
+                    "name": "Aesthetics",
+                    "children": []
+                },
+                {
+                    "code": "BJ",
+                    "name": "Ethics",
+                    "children": []
+                },
+                {
+                    "code": "BL",
+                    "name": "Religions. Mythology. Rationalism",
+                    "children": []
+                },
+                {
+                    "code": "BM",
+                    "name": "Judaism",
+                    "children": []
+                },
+                {
+                    "code": "BP",
+                    "name": "Islam. Bahaism. Theosophy, etc.",
+                    "children": []
+                },
+                {
+                    "code": "BQ",
+                    "name": "Buddhism",
+                    "children": []
+                },
+                {
+                    "code": "BR",
+                    "name": "Christianity",
+                    "children": []
+                },
+                {
+                    "code": "BS",
+                    "name": "The Bible",
+                    "children": []
+                },
+                {
+                    "code": "BT",
+                    "name": "Doctrinal Theology",
+                    "children": []
+                },
+                {
+                    "code": "BV",
+                    "name": "Practical Theology",
+                    "children": []
+                },
+                {
+                    "code": "BX",
+                    "name": "Christian Denominations",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "C",
+            "name": "Auxiliary Sciences of History",
+            "children": [
+                {
+                    "code": "C",
+                    "name": "Auxiliary Sciences of History (General)",
+                    "children": []
+                },
+                {
+                    "code": "CB",
+                    "name": "History of Civilization",
+                    "children": []
+                },
+                {
+                    "code": "CC",
+                    "name": "Archaeology",
+                    "children": []
+                },
+                {
+                    "code": "CD",
+                    "name": "Diplomatics. Archives. Seals",
+                    "children": []
+                },
+                {
+                    "code": "CE",
+                    "name": "Technical Chronology. Calendar",
+                    "children": []
+                },
+                {
+                    "code": "CJ",
+                    "name": "Numismatics",
+                    "children": []
+                },
+                {
+                    "code": "CN",
+                    "name": "Inscriptions. Epigraphy",
+                    "children": []
+                },
+                {
+                    "code": "CR",
+                    "name": "Heraldry",
+                    "children": []
+                },
+                {
+                    "code": "CS",
+                    "name": "Genealogy",
+                    "children": []
+                },
+                {
+                    "code": "CT",
+                    "name": "Biography",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "D",
+            "name": "World History and History of Europe, Asia, Africa, Australia, New Zealand, etc.",
+            "children": [
+                {
+                    "code": "D",
+                    "name": "History (General)",
+                    "children": []
+                },
+                {
+                    "code": "DA",
+                    "name": "Great Britain",
+                    "children": []
+                },
+                {
+                    "code": "DAW",
+                    "name": "Central Europe",
+                    "children": []
+                },
+                {
+                    "code": "DB",
+                    "name": "Austria - Liechtenstein - Hungary - Czechoslovakia",
+                    "children": []
+                },
+                {
+                    "code": "DC",
+                    "name": "France - Andorra - Monaco",
+                    "children": []
+                },
+                {
+                    "code": "DD",
+                    "name": "Germany",
+                    "children": []
+                },
+                {
+                    "code": "DE",
+                    "name": "Greco-Roman World",
+                    "children": []
+                },
+                {
+                    "code": "DF",
+                    "name": "Greece",
+                    "children": []
+                },
+                {
+                    "code": "DG",
+                    "name": "Italy - Malta",
+                    "children": []
+                },
+                {
+                    "code": "DH",
+                    "name": "Low Countries - Benelux Countries",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "E",
+            "name": "History of the Americas",
+            "children": []
+        },
+        {
+            "code": "F",
+            "name": "History of the Americas",
+            "children": []
+        },
+        {
+            "code": "G",
+            "name": "Geography. Anthropology. Recreation",
+            "children": [
+                {
+                    "code": "G",
+                    "name": "Geography (General). Atlases. Maps",
+                    "children": []
+                },
+                {
+                    "code": "GA",
+                    "name": "Mathematical geography. Cartography",
+                    "children": []
+                },
+                {
+                    "code": "GB",
+                    "name": "Physical geography",
+                    "children": []
+                },
+                {
+                    "code": "GC",
+                    "name": "Oceanography",
+                    "children": []
+                },
+                {
+                    "code": "GE",
+                    "name": "Environmental Sciences",
+                    "children": []
+                },
+                {
+                    "code": "GF",
+                    "name": "Human ecology. Anthropogeography",
+                    "children": []
+                },
+                {
+                    "code": "GN",
+                    "name": "Anthropology",
+                    "children": []
+                },
+                {
+                    "code": "GR",
+                    "name": "Folklore",
+                    "children": []
+                },
+                {
+                    "code": "GT",
+                    "name": "Manners and customs (General)",
+                    "children": []
+                },
+                {
+                    "code": "GV",
+                    "name": "Recreation. Leisure",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "H",
+            "name": "Social Sciences",
+            "children": [
+                {
+                    "code": "H",
+                    "name": "Social sciences (General)",
+                    "children": []
+                },
+                {
+                    "code": "HA",
+                    "name": "Statistics",
+                    "children": []
+                },
+                {
+                    "code": "HB",
+                    "name": "Economic theory. Demography",
+                    "children": []
+                },
+                {
+                    "code": "HC",
+                    "name": "Economic history and conditions",
+                    "children": []
+                },
+                {
+                    "code": "HD",
+                    "name": "Industries. Land use. Labor",
+                    "children": []
+                },
+                {
+                    "code": "HE",
+                    "name": "Transportation and communications",
+                    "children": []
+                },
+                {
+                    "code": "HF",
+                    "name": "Commerce",
+                    "children": []
+                },
+                {
+                    "code": "HG",
+                    "name": "Finance",
+                    "children": []
+                },
+                {
+                    "code": "HJ",
+                    "name": "Public finance",
+                    "children": []
+                },
+                {
+                    "code": "HM",
+                    "name": "Sociology (General)",
+                    "children": []
+                },
+                {
+                    "code": "HN",
+                    "name": "Social history and conditions. Social problems. Social reform",
+                    "children": []
+                },
+                {
+                    "code": "HQ",
+                    "name": "The family. Marriage. Women",
+                    "children": []
+                },
+                {
+                    "code": "HS",
+                    "name": "Societies: secret, benevolent, etc.",
+                    "children": []
+                },
+                {
+                    "code": "HT",
+                    "name": "Communities. Classes. Races",
+                    "children": []
+                },
+                {
+                    "code": "HV",
+                    "name": "Social pathology. Social and public welfare. Criminology",
+                    "children": []
+                },
+                {
+                    "code": "HX",
+                    "name": "Socialism. Communism. Anarchism",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "J",
+            "name": "Political Science",
+            "children": [
+                {
+                    "code": "J",
+                    "name": "General legislative and executive papers",
+                    "children": []
+                },
+                {
+                    "code": "JA",
+                    "name": "Political science (General)",
+                    "children": []
+                },
+                {
+                    "code": "JC",
+                    "name": "Political theory",
+                    "children": []
+                },
+                {
+                    "code": "JF",
+                    "name": "Political institutions and public administration",
+                    "children": []
+                },
+                {
+                    "code": "JJ",
+                    "name": "Political institutions and public administration (North America)",
+                    "children": []
+                },
+                {
+                    "code": "JK",
+                    "name": "Political institutions and public administration (United States)",
+                    "children": []
+                },
+                {
+                    "code": "JL",
+                    "name": "Political institutions and public administration (Canada, Latin America, etc.)",
+                    "children": []
+                },
+                {
+                    "code": "JN",
+                    "name": "Political institutions and public administration (Europe)",
+                    "children": []
+                },
+                {
+                    "code": "JQ",
+                    "name": "Political institutions and public administration (Asia, Africa, Australia, Pacific Area, etc.)",
+                    "children": []
+                },
+                {
+                    "code": "JS",
+                    "name": "Local government. Municipal government",
+                    "children": []
+                },
+                {
+                    "code": "JV",
+                    "name": "Colonies and colonization. Emigration and immigration. International migration",
+                    "children": []
+                },
+                {
+                    "code": "JX",
+                    "name": "International law, see JZ and KZ (obsolete)",
+                    "children": []
+                },
+                {
+                    "code": "JZ",
+                    "name": "International relations",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "K",
+            "name": "Law",
+            "children": [
+                {
+                    "code": "K",
+                    "name": "Law in general. Comparative and uniform law. Jurisprudence",
+                    "children": []
+                },
+                {
+                    "code": "KB",
+                    "name": "Religious law in general. Comparative religious law. Jurisprudence",
+                    "children": []
+                },
+                {
+                    "code": "KBM",
+                    "name": "Jewish law",
+                    "children": []
+                },
+                {
+                    "code": "KBP",
+                    "name": "Islamic law",
+                    "children": []
+                },
+                {
+                    "code": "KBR",
+                    "name": "History of canon law",
+                    "children": []
+                },
+                {
+                    "code": "KBU",
+                    "name": "Law of the Roman Catholic Church. The Holy See",
+                    "children": []
+                },
+                {
+                    "code": "KD",
+                    "name": "United Kingdom and Ireland",
+                    "children": []
+                },
+                {
+                    "code": "KDK",
+                    "name": "United Kingdom and Ireland",
+                    "children": []
+                },
+                {
+                    "code": "KDZ",
+                    "name": "America. North America",
+                    "children": []
+                },
+                {
+                    "code": "KE",
+                    "name": "Canada",
+                    "children": []
+                },
+                {
+                    "code": "KF",
+                    "name": "United States",
+                    "children": []
+                },
+                {
+                    "code": "KG",
+                    "name": "Latin America - Mexico and Central America West Indies. Caribbean area",
+                    "children": []
+                },
+                {
+                    "code": "KH",
+                    "name": "South America",
+                    "children": []
+                },
+                {
+                    "code": "KJ",
+                    "name": "Europe",
+                    "children": []
+                },
+                {
+                    "code": "KKZ",
+                    "name": "Europe",
+                    "children": []
+                },
+                {
+                    "code": "KL",
+                    "name": "Asia and Eurasia, Africa, Pacific Area, and Antarctica",
+                    "children": []
+                },
+                {
+                    "code": "KWX",
+                    "name": "Asia and Eurasia, Africa, Pacific Area, and Antarctica",
+                    "children": []
+                },
+                {
+                    "code": "KZ",
+                    "name": "Law of nations",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "L",
+            "name": "Education",
+            "children": [
+                {
+                    "code": "L",
+                    "name": "Education (General) Subclass LA History of education Subclass LB Theory and practice of education Subclass LC Special aspects of education Subclass LD Individual institutions - United States Subclass LE Individual institutions - America (except United States) Subclass LF Individual institutions - Europe Subclass LG Individual institutions - Asia, Africa, Indian Ocean islands, Australia, New Zealand, Pacific islands",
+                    "children": []
+                },
+                {
+                    "code": "LH",
+                    "name": "College and school magazines and papers",
+                    "children": []
+                },
+                {
+                    "code": "LJ",
+                    "name": "Student fraternities and societies, United States",
+                    "children": []
+                },
+                {
+                    "code": "LT",
+                    "name": "Textbooks",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "M",
+            "name": "Music and Books on Music",
+            "children": [
+                {
+                    "code": "M",
+                    "name": "Music",
+                    "children": []
+                },
+                {
+                    "code": "ML",
+                    "name": "Literature on music",
+                    "children": []
+                },
+                {
+                    "code": "MT",
+                    "name": "Instruction and study",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "N",
+            "name": "Fine Arts",
+            "children": [
+                {
+                    "code": "N",
+                    "name": "Visual arts",
+                    "children": []
+                },
+                {
+                    "code": "NA",
+                    "name": "Architecture",
+                    "children": []
+                },
+                {
+                    "code": "NB",
+                    "name": "Sculpture",
+                    "children": []
+                },
+                {
+                    "code": "NC",
+                    "name": "Drawing. Design. Illustration",
+                    "children": []
+                },
+                {
+                    "code": "ND",
+                    "name": "Painting",
+                    "children": []
+                },
+                {
+                    "code": "NE",
+                    "name": "Print media",
+                    "children": []
+                },
+                {
+                    "code": "NK",
+                    "name": "Decorative arts",
+                    "children": []
+                },
+                {
+                    "code": "NX",
+                    "name": "Arts in general",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "P",
+            "name": "Language and Literature",
+            "children": [
+                {
+                    "code": "P",
+                    "name": "Philology. Linguistics",
+                    "children": []
+                },
+                {
+                    "code": "PA",
+                    "name": "Greek language and literature. Latin language and literature",
+                    "children": []
+                },
+                {
+                    "code": "PB",
+                    "name": "Modern languages. Celtic languages",
+                    "children": []
+                },
+                {
+                    "code": "PC",
+                    "name": "Romance languages",
+                    "children": []
+                },
+                {
+                    "code": "PD",
+                    "name": "Germanic languages. Scandinavian languages",
+                    "children": []
+                },
+                {
+                    "code": "PE",
+                    "name": "English language",
+                    "children": []
+                },
+                {
+                    "code": "PF",
+                    "name": "West Germanic languages",
+                    "children": []
+                },
+                {
+                    "code": "PG",
+                    "name": "Slavic languages. Baltic languages. Albanian language",
+                    "children": []
+                },
+                {
+                    "code": "PH",
+                    "name": "Uralic languages. Basque language",
+                    "children": []
+                },
+                {
+                    "code": "PJ",
+                    "name": "Oriental languages and literatures",
+                    "children": []
+                },
+                {
+                    "code": "PK",
+                    "name": "Indo-Iranian languages and literatures",
+                    "children": []
+                },
+                {
+                    "code": "PL",
+                    "name": "Languages and literatures of Eastern Asia, Africa, Oceania",
+                    "children": []
+                },
+                {
+                    "code": "PM",
+                    "name": "Hyperborean, Indian, and artificial languages",
+                    "children": []
+                },
+                {
+                    "code": "PN",
+                    "name": "Literature (General)",
+                    "children": []
+                },
+                {
+                    "code": "PQ",
+                    "name": "French literature - Italian literature - Spanish literature - Portuguese literature",
+                    "children": []
+                },
+                {
+                    "code": "PR",
+                    "name": "English literature",
+                    "children": []
+                },
+                {
+                    "code": "PS",
+                    "name": "American literature",
+                    "children": []
+                },
+                {
+                    "code": "PT",
+                    "name": "German literature - Dutch literature - Flemish literature since 1830 Afrikaans literature - Scandinavian literature - Old Norse literature: Old Icelandic and Old Norwegian - Modern Icelandic literature - Faroese literature - Danish literature - Norwegian literature - Swedish literature",
+                    "children": []
+                },
+                {
+                    "code": "PZ",
+                    "name": "Fiction and juvenile belles lettres",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "Q",
+            "name": "Science",
+            "children": [
+                {
+                    "code": "Q",
+                    "name": "Science (General)",
+                    "children": []
+                },
+                {
+                    "code": "QA",
+                    "name": "Mathematics",
+                    "children": []
+                },
+                {
+                    "code": "QB",
+                    "name": "Astronomy",
+                    "children": []
+                },
+                {
+                    "code": "QC",
+                    "name": "Physics",
+                    "children": []
+                },
+                {
+                    "code": "QD",
+                    "name": "Chemistry",
+                    "children": []
+                },
+                {
+                    "code": "QE",
+                    "name": "Geology",
+                    "children": []
+                },
+                {
+                    "code": "QH",
+                    "name": "Natural history - Biology",
+                    "children": []
+                },
+                {
+                    "code": "QK",
+                    "name": "Botany",
+                    "children": []
+                },
+                {
+                    "code": "QL",
+                    "name": "Zoology",
+                    "children": []
+                },
+                {
+                    "code": "QM",
+                    "name": "Human anatomy",
+                    "children": []
+                },
+                {
+                    "code": "QP",
+                    "name": "Physiology",
+                    "children": []
+                },
+                {
+                    "code": "QR",
+                    "name": "Microbiology",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "R",
+            "name": "Medicine",
+            "children": [
+                {
+                    "code": "R",
+                    "name": "Medicine (General)",
+                    "children": []
+                },
+                {
+                    "code": "RA",
+                    "name": "Public aspects of medicine",
+                    "children": []
+                },
+                {
+                    "code": "RB",
+                    "name": "Pathology",
+                    "children": []
+                },
+                {
+                    "code": "RC",
+                    "name": "Internal medicine",
+                    "children": []
+                },
+                {
+                    "code": "RD",
+                    "name": "Surgery",
+                    "children": []
+                },
+                {
+                    "code": "RE",
+                    "name": "Ophthalmology",
+                    "children": []
+                },
+                {
+                    "code": "RF",
+                    "name": "Otorhinolaryngology",
+                    "children": []
+                },
+                {
+                    "code": "RG",
+                    "name": "Gynecology and obstetrics",
+                    "children": []
+                },
+                {
+                    "code": "RJ",
+                    "name": "Pediatrics",
+                    "children": []
+                },
+                {
+                    "code": "RK",
+                    "name": "Dentistry",
+                    "children": []
+                },
+                {
+                    "code": "RL",
+                    "name": "Dermatology",
+                    "children": []
+                },
+                {
+                    "code": "RM",
+                    "name": "Therapeutics. Pharmacology",
+                    "children": []
+                },
+                {
+                    "code": "RS",
+                    "name": "Pharmacy and materia medica",
+                    "children": []
+                },
+                {
+                    "code": "RT",
+                    "name": "Nursing",
+                    "children": []
+                },
+                {
+                    "code": "RV",
+                    "name": "Botanic, Thomsonian, and eclectic medicine",
+                    "children": []
+                },
+                {
+                    "code": "RX",
+                    "name": "Homeopathy",
+                    "children": []
+                },
+                {
+                    "code": "RZ",
+                    "name": "Other systems of medicine",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "S",
+            "name": "Agriculture",
+            "children": [
+                {
+                    "code": "S",
+                    "name": "Agriculture (General)",
+                    "children": []
+                },
+                {
+                    "code": "SB",
+                    "name": "Plant culture",
+                    "children": []
+                },
+                {
+                    "code": "SD",
+                    "name": "Forestry",
+                    "children": []
+                },
+                {
+                    "code": "SF",
+                    "name": "Animal culture",
+                    "children": []
+                },
+                {
+                    "code": "SH",
+                    "name": "Aquaculture. Fisheries. Angling",
+                    "children": []
+                },
+                {
+                    "code": "SK",
+                    "name": "Hunting sports",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "T",
+            "name": "Technology",
+            "children": [
+                {
+                    "code": "T",
+                    "name": "Technology (General)",
+                    "children": []
+                },
+                {
+                    "code": "TA",
+                    "name": "Engineering (General). Civil engineering",
+                    "children": []
+                },
+                {
+                    "code": "TC",
+                    "name": "Hydraulic engineering. Ocean engineering",
+                    "children": []
+                },
+                {
+                    "code": "TD",
+                    "name": "Environmental technology. Sanitary engineering",
+                    "children": []
+                },
+                {
+                    "code": "TE",
+                    "name": "Highway engineering. Roads and pavements",
+                    "children": []
+                },
+                {
+                    "code": "TF",
+                    "name": "Railroad engineering and operation",
+                    "children": []
+                },
+                {
+                    "code": "TG",
+                    "name": "Bridge engineering",
+                    "children": []
+                },
+                {
+                    "code": "TH",
+                    "name": "Building construction",
+                    "children": []
+                },
+                {
+                    "code": "TJ",
+                    "name": "Mechanical engineering and machinery",
+                    "children": []
+                },
+                {
+                    "code": "TK",
+                    "name": "Electrical engineering. Electronics. Nuclear engineering",
+                    "children": []
+                },
+                {
+                    "code": "TL",
+                    "name": "Motor vehicles. Aeronautics. Astronautics",
+                    "children": []
+                },
+                {
+                    "code": "TN",
+                    "name": "Mining engineering. Metallurgy",
+                    "children": []
+                },
+                {
+                    "code": "TP",
+                    "name": "Chemical technology",
+                    "children": []
+                },
+                {
+                    "code": "TR",
+                    "name": "Photography",
+                    "children": []
+                },
+                {
+                    "code": "TS",
+                    "name": "Manufactures",
+                    "children": []
+                },
+                {
+                    "code": "TT",
+                    "name": "Handicrafts. Arts and crafts",
+                    "children": []
+                },
+                {
+                    "code": "TX",
+                    "name": "Home economics",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "U",
+            "name": "Military Science",
+            "children": [
+                {
+                    "code": "U",
+                    "name": "Military science (General)",
+                    "children": []
+                },
+                {
+                    "code": "UA",
+                    "name": "Armies: Organization, distribution, military situation",
+                    "children": []
+                },
+                {
+                    "code": "UB",
+                    "name": "Military administration",
+                    "children": []
+                },
+                {
+                    "code": "UC",
+                    "name": "Maintenance and transportation",
+                    "children": []
+                },
+                {
+                    "code": "UD",
+                    "name": "Infantry",
+                    "children": []
+                },
+                {
+                    "code": "UE",
+                    "name": "Cavalry. Armor",
+                    "children": []
+                },
+                {
+                    "code": "UF",
+                    "name": "Artillery",
+                    "children": []
+                },
+                {
+                    "code": "UG",
+                    "name": "Military engineering. Air forces",
+                    "children": []
+                },
+                {
+                    "code": "UH",
+                    "name": "Other services",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "V",
+            "name": "Naval Science",
+            "children": [
+                {
+                    "code": "V",
+                    "name": "Naval science (General)",
+                    "children": []
+                },
+                {
+                    "code": "VA",
+                    "name": "Navies: Organization, distribution, naval situation",
+                    "children": []
+                },
+                {
+                    "code": "VB",
+                    "name": "Naval administration",
+                    "children": []
+                },
+                {
+                    "code": "VC",
+                    "name": "Naval maintenance",
+                    "children": []
+                },
+                {
+                    "code": "VD",
+                    "name": "Naval seamen",
+                    "children": []
+                },
+                {
+                    "code": "VE",
+                    "name": "Marines",
+                    "children": []
+                },
+                {
+                    "code": "VF",
+                    "name": "Naval ordnance",
+                    "children": []
+                },
+                {
+                    "code": "VG",
+                    "name": "Minor services of navies",
+                    "children": []
+                },
+                {
+                    "code": "VK",
+                    "name": "Navigation. Merchant marine",
+                    "children": []
+                },
+                {
+                    "code": "VM",
+                    "name": "Naval architecture. Shipbuilding. Marine engineering",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "code": "Z",
+            "name": "Bibliography. Library Science. Information Resources (General)",
+            "children": [
+                {
+                    "code": "Z",
+                    "name": "Books (General). Writing. Paleography. Book industries and trade. Libraries. Bibliography",
+                    "children": []
+                },
+                {
+                    "code": "ZA",
+                    "name": "Information resources (General)",
+                    "children": []
+                }
+            ]
+        }
+    ]
+}
