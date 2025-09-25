@@ -4,22 +4,23 @@ Each of these classes serve a distinct purpose. For instance, the SearchResult o
 While MemoryManager is used within the AI chat process in order to give the LLM memory.
 """
 
+import json
+import logging
 import os
+import re
 import sys
 import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import lancedb
+from foundry_local import FoundryLocalManager
 from lancedb.rerankers import LinearCombinationReranker
-from langchain.tools import tool
-from langchain_community.chat_models import ChatLlamaCpp
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.embeddings import LlamaCppEmbeddings
 from langchain_community.vectorstores import LanceDB
 from langchain_core.documents import Document
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from llama_cpp import llama_n_ctx_train
+from langchain_huggingface import HuggingFaceEmbeddings
+from openai import OpenAI
 from semchunk import chunkerify
 
 from catalog_manager import Book, CatalogManager
@@ -42,23 +43,23 @@ class MemoryManager:
     def __init__(self, get_len_tokens, max_tokens=2048):
         self.get_len_tokens = get_len_tokens  # is a lambda function
         self.max_tokens = max_tokens
-        self.memory = []
+        self.memory: list[dict] = []
 
     def token_count(self):
         total_count = 0
         for msg in self.memory:
-            total_count += self.get_len_tokens(msg.content)
+            total_count += self.get_len_tokens(msg["content"])
         return total_count
 
     def limit(self):
         """Keeps the total token length under a certain limit."""
         count = self.token_count()
         if count > self.max_tokens and len(self.memory) > 1:
-            index = 1 if type(self.memory[0]) is SystemMessage else 0
+            index = 1 if self.memory[0]["role"] == "system" else 0
             self.memory.pop(index)
             self.limit()
 
-    def add(self, message):
+    def add(self, message: dict):
         self.limit()
         self.memory.append(message)
 
@@ -78,7 +79,7 @@ class SearchManager:
         self,
         path: str,
         embed_path: str,
-        chat_path: str,
+        chat_model: str,
         system_prompt: str,
         catalog_manager: CatalogManager,
     ):
@@ -86,7 +87,7 @@ class SearchManager:
         warnings.simplefilter("ignore")
 
         self.embed_path = embed_path
-        self.chat_path = chat_path
+        self.chat_model = chat_model
         self.catalog_manager = catalog_manager
 
         self.create_embedding_client()
@@ -94,14 +95,17 @@ class SearchManager:
         self.db = lancedb.connect(f"{path}/vectordb")
         self.create_vector_store()
 
-        self.chat_model = None
-        self.tools = None
-        self.tool_names = None
+        self.foundry_local = None
+        self.chat_client = None
+
+        logging.getLogger("transformers.tokenization_utils_base").setLevel(
+            logging.ERROR
+        )
         self.get_len_tokens = lambda text: len(
-            self.embed_model.client.tokenize(text.encode("utf-8"), False)
+            self.embed_model._client.tokenizer.tokenize(text)
         )
         self.memory = MemoryManager(self.get_len_tokens)
-        self.memory.add(SystemMessage(content=system_prompt))
+        self.memory.add({"role": "system", "content": system_prompt})
 
     def create_vector_store(self, mode="append"):
         self.vector_store = LanceDB(
@@ -111,10 +115,12 @@ class SearchManager:
             reranker=LinearCombinationReranker(),
         )
 
+    def create_embedding_client(self):
+        self.embed_model = HuggingFaceEmbeddings(model_name=self.embed_path)
+
     def close(self):
-        self.embed_model.client.close()
-        if self.chat_model:
-            self.chat_model.client.close()
+        if self.chat_client:
+            self.chat_client.client.close()
 
     def refresh(self):
         """Refreshes the entire vector database (maybe the embed model changed)."""
@@ -149,7 +155,7 @@ class SearchManager:
             return
 
         n_ctx = 256
-        if llama_n_ctx_train(self.embed_model.client.model) < n_ctx:
+        if self.embed_model._client.tokenizer.model_max_length < n_ctx:
             raise ValueError(f"{self.embed_path} has a context length below {n_ctx}")
         chunker = chunkerify(
             self.get_len_tokens,
@@ -175,13 +181,11 @@ class SearchManager:
             raise ValueError(f"could not extract text from '{path}'")
 
     def remove(self, id: str):
-        self.vector_store.delete(filter=f"`metadata`.`id` = {id}")
+        self.vector_store.delete(filter=f"`metadata`.`id` = '{id}'")
 
-    def search(self, query: str, k: int = 4) -> list[SearchResult]:
+    def search_query(self, query: str, k: int = 4) -> list[SearchResult]:
         results = self.vector_store.similarity_search_with_relevance_scores(query, k)
-        filtered_results = [
-            result for result, score in results if score < 0 or score > 0.4
-        ]
+        filtered_results = [result for result, score in results if score > 0.1]
         meta_results = self.get_meta_results(filtered_results)
         return meta_results
 
@@ -195,77 +199,90 @@ class SearchManager:
             for result in results
         ]
 
-    def create_embedding_client(self):
-        self.embed_model = LlamaCppEmbeddings(
-            model_path=self.embed_path,
-            n_ctx=0,
-            f16_kv=True,
-        )
+    def search(self, query: str) -> str:
+        results = self.search_query(query)
+        return str([asdict(result) for result in results])
 
-    def initialize_model(self):
-        if self.chat_model is None:
-            n_ctx = 4096  # original ChatGPT context length
-            self.chat_model = ChatLlamaCpp(
-                model_path=self.chat_path,
-                n_ctx=n_ctx,
-                max_tokens=n_ctx / 2,
-                n_gpu_layers=99,
-                f16_kv=True,
-            )
-
-            if llama_n_ctx_train(self.chat_model.client.model) < n_ctx:
-                raise ValueError(
-                    f"{self.chat_path} has a context length less then {n_ctx}"
-                )
-
-    @property
-    def rich_search(self):
-        @tool(parse_docstring=True)
-        def search(query: str) -> str:
-            """Performs a book database search based on the query.
-
-            Args:
-                query: Keep the query limited to keywords for best results.
-            """
-            results = self.search(query)
-            return str([asdict(result) for result in results])
-
-        return search
-
-    def parse_tool_calls(self, tool_calls: dict, tool_names: dict):
-        tool_results = []
-        for tool_call in tool_calls:
-            name = tool_call["name"]
-            if name in tool_names:
-                args = tool_call["args"]
-                tool_results.append(tool_names[name].invoke(input=args))
-        return tool_results
+    def parse_function_calls(self, function_calls: dict, tools: dict):
+        results = []
+        for function_call in function_calls:
+            name = function_call["name"]
+            arguments = function_call["arguments"]
+            if name in tools:
+                results.append(tools[name](**arguments))
+        return results
 
     def question(
         self,
         query: str,
     ):
         # Dynamic loading of the model
-        self.initialize_model()
+        if self.foundry_local is None:
+            self.foundry_local = FoundryLocalManager()
+        if self.chat_client is None:
+            self.chat_client = OpenAI(
+                api_key=self.foundry_local.api_key, base_url=self.foundry_local.endpoint
+            )
 
-        # Search via keywords
-        tool_caller = self.chat_model.bind_tools(
-            tools=[self.rich_search],
-            tool_choice={"type": "function", "function": {"name": "search"}},
+        # First, tool calling
+        response = self.chat_client.chat.completions.create(
+            model=self.chat_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": 'You are a keyword extractor that extracts relevant keywords from a user\'s query and calls a search function called "search" with keywords separated by commas in a single sentence.',
+                },
+                {"role": "user", "content": f"User Query:\n{query}"},
+            ],
+            tools=[
+                {
+                    "name": "search",
+                    "description": "Performs a book database search based on the query.",
+                    "parameters": {
+                        "query": {
+                            "description": "Keep the query limited to keywords for best results.",
+                            "type": "string",
+                        }
+                    },
+                }
+            ],
+            temperature=0.00001,
+            max_tokens=1024,
+            top_p=1.0,
         )
-        output = tool_caller.invoke(query).model_dump()
-        tool_result = self.parse_tool_calls(
-            tool_calls=output["tool_calls"],
-            tool_names={
-                "search": self.rich_search,
-            },
-        )[0]
 
-        # Get the output
-        self.memory.add(HumanMessage(content=f"User query:\n{query}"))
+        message = response.choices[0].message.content
+        funcresults = re.search(r"functools\[.*\]", message, re.DOTALL)
+        functools = (
+            funcresults
+            .group()
+            .replace("functools", "")
+            if funcresults else None
+        )
+        if functools:
+            function_calls = json.loads(functools)
+            function_result = self.parse_function_calls(
+                function_calls=function_calls, tools={"search": self.search}
+            )[0]
+
+        # Second, the real output
+        self.memory.add({"role": "user", "content": f"User query:\n{query}"})
+        if functools:
+            self.memory.add(
+                {"role": "user", "content": f"Database search results:\n{function_result}"}
+            )
+
+        response = (
+            self.chat_client.chat.completions.create(
+                model=self.chat_model,
+                messages=self.memory.get(),
+                temperature=0.5,
+                max_tokens=4096,
+            )
+            .choices[0]
+            .message
+        )
         self.memory.add(
-            HumanMessage(content=f"Database search results:\n{tool_result}")
+            {"role": response.role, "content": response.content.lstrip(":").strip()}
         )
-        output = self.chat_model.invoke(self.memory.get()).model_dump()
-        self.memory.add(AIMessage(content=output["content"]))
-        return self.memory.get(-1).content
+        return self.memory.get(-1)["content"]

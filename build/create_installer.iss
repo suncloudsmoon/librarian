@@ -3,8 +3,8 @@ AppName=Librarian
 AppPublisher=suncloudsmoon
 AppPublisherURL=https://github.com/suncloudsmoon
 AppCopyright=Copyright (c) 2025 suncloudsmoon. All rights reserved.
-AppVersion=0.5.0.0
-AppId={{652CD91D-E131-460E-870E-2A546A01C766}
+AppVersion=0.6.0.0
+AppId={{3C5D7953-582C-40E1-AFC3-6B50ECCDC4F9}
 LicenseFile=build\legal\LICENSE.txt
 DefaultDirName={autopf}\suncloudsmoon\Librarian
 WizardStyle=modern
@@ -21,6 +21,8 @@ SourceDir=../
 Source: "build\executables\librarian\*"; DestDir: "{app}"; Flags: recursesubdirs
 Source: "build\enable_long_path.reg"; DestDir: "{app}"; Check: IsUserMode
 Source: "build\legal\*"; DestDir: "{app}"
+Source: "build\deps\*"; DestDir: "{app}\deps"; Flags: recursesubdirs
+Source: "build\models\*"; DestDir: "{%USERPROFILE}\.foundry\cache\models"; Flags: recursesubdirs
 
 [Registry]
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\FileSystem"; ValueType: dword; ValueName: "LongPathsEnabled"; ValueData: 1; Check: IsAdminInstallMode

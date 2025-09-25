@@ -1,11 +1,10 @@
-
 import os
 import sys
 import subprocess
 from shutil import copy, rmtree
 
 sys.path.append(".")
-from conversions import create_classification_system, create_legal
+from conversions import *
 
 from utils import defined_classifications
 
@@ -13,11 +12,12 @@ from utils import defined_classifications
 def clean():
     directories = [
         "__pycache__",
-        "hooks/__pycache__",
         "executables",
         "installer",
         "legal",
         "librarian",
+        "models",
+        "deps",
     ]
     files = ["file_version_info.txt", "librarian.spec"]
 
@@ -38,6 +38,9 @@ def clean():
 
 
 def main():
+    # AI model stuff
+    dump_onnx_model("Qwen/Qwen3-0.6B", "build")
+
     # create dewey.json
     for system in defined_classifications:
         create_classification_system(
@@ -63,12 +66,19 @@ def main():
     subprocess.run(args)
     print("🛠️  EXE metadata created")
 
-    windows_stuff = "--hidden-import=py_setenv" if sys.platform == "win32" else ""
+    windows_stuff = (
+        [
+            f"--hidden-import={package}"
+            for package in ["py_setenv", "win32api", "win32con"]
+        ]
+        if sys.platform == "win32"
+        else []
+    )
     args = [
         "pyinstaller",
+        "--noconfirm",
         "--name",
         "librarian",
-        "--additional-hooks-dir=build/hooks",
         "--add-data",
         f"../models{os.pathsep}models",
         "--add-data",
@@ -81,13 +91,13 @@ def main():
         "build",
         "--distpath",
         "build/executables",
-        windows_stuff,
         "app.py",
-    ]
+    ] + windows_stuff
     subprocess.run(args)
     print("🛠️  PyInstaller done")
 
     if sys.platform == "win32":
+        dump_foundry_local("build")
         issc_path = os.path.join(
             os.environ["PROGRAMFILES(x86)"], "Inno Setup 6/ISCC.exe"
         )

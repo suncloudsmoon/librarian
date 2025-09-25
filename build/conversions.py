@@ -4,12 +4,77 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 from uuid import uuid4
+import subprocess
+from shutil import copy, move
+from huggingface_hub import HfFileSystem
 
 sys.path.append(".")
 from utils import Category, ClassificationSystem
 from catalog_manager import Book
 
 
+# model conversion time
+def dump_onnx_model(huggingface_model: str, working_dir: str):
+    comps = huggingface_model.split("/")
+    company = comps[0].lower()
+    model = comps[1].lower()
+
+    output_dir = Path(f"{working_dir}/models/{company}")
+    model_dir = output_dir / model
+    if model_dir.exists():
+        return
+
+    args = [
+        "olive",
+        "auto-opt",
+        "--model_name_or_path",
+        huggingface_model,
+        "--device",
+        "gpu",
+        "--provider",
+        "DmlExecutionProvider",
+        "--use_model_builder",
+        "--precision",
+        "int4",
+        "--output_path",
+        output_dir,
+    ]
+    subprocess.run(args)
+
+    src_path = output_dir / "model"
+    os.rename(src_path, model_dir)
+    move(output_dir / "model_config.json", model_dir)
+
+    # Copy chat template to model directory
+    chat_template = f"{working_dir}/chat_templates/{company}/{model.lower()}.json"
+    copy(chat_template, model_dir / "inference_model.json")
+
+    # Create LICENSE if it exists
+    fs = HfFileSystem()
+    files = fs.glob(f"{huggingface_model}/LICENSE")
+    if files:
+        contents = fs.read_text(files[0], encoding="utf-8")
+        Path(model_dir / "LICENSE.txt").write_text(contents, encoding="utf-8")
+
+
+def dump_foundry_local(out_dir: str):
+    path = Path(f"{out_dir}/deps/foundry_local/")
+    if not path.exists() or not list(path.glob("*.msix")):
+        path.mkdir(parents=True, exist_ok=True)
+        args = [
+            "winget",
+            "download",
+            "--id",
+            "Microsoft.FoundryLocal",
+            "--architecture",
+            "x64",
+            "--download-directory",
+            path,
+        ]
+        subprocess.run(args)
+
+
+# other stuff
 def dump_class_results(path: str, type: str, data: list[Category]):
     system = ClassificationSystem(type)
     system.data_list = data
@@ -110,7 +175,7 @@ def convert_old_catalog(catalog_path):
 def create_legal(
     legal_path: str,
     notice_path: str,
-    search_paths: list[str] = [".venv", "models"],
+    search_paths: list[str] = [".venv"],
 ):
     legal, notice = "", ""
 

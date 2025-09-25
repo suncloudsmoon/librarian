@@ -1,4 +1,5 @@
 __pycache__/
+.olive-cache/
 .librarian/
 models/
 samples/

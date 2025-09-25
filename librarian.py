@@ -28,8 +28,10 @@ class Config:
     system_prompt: str = (
         "You are a concise librarian assistant. Use the supplied search-results input to answer the user's query and draw on those documents as evidence. Never mention internal databases, tools, or memory — present findings as if you just retrieved them. When citing, include only source metadata (title, authors, page, id, call_number) inline. Keep answers short, factual, and helpful."
     )
-    chat_model: str = get_resource_path("models/qwen3-0.6b-q4_k_m.gguf")
-    embed_model: str = get_resource_path("models/all-MiniLM-L6-v2-f16.gguf")
+    chat_model: str = "qwen3-0.6b-gpu"
+    embed_model: str = get_resource_path(
+        "models/sentence-transformers/all-minilm-l6-v2"
+    )
     index_denylist: list[str] = field(default_factory=list)
 
     @classmethod
@@ -63,7 +65,7 @@ class Librarian:
         self.search_manager = SearchManager(
             path=self.librarian_path,
             embed_path=self.config.embed_model,
-            chat_path=self.config.chat_model,
+            chat_model=self.config.chat_model,
             system_prompt=self.config.system_prompt,
             catalog_manager=self.catalog_manager,
         )
@@ -123,22 +125,24 @@ class Librarian:
         """Removes the book specified by id from librarian."""
         self.delete_book(id)
         self.catalog_manager.remove(id)
+        self.catalog_manager.save()
         self.search_manager.remove(id)
         if id in self.config.index_denylist:
-            self.self.config.index_denylist.remove(id)
+            self.config.index_denylist.remove(id)
 
     def edit(self, book: Book):
         old_book = self.info(book.id)
         old_path = self.get_book_path(old_book)
         new_path = self.get_book_path(book)
 
-        os.makedirs(new_path, exist_ok=True)
+        os.makedirs(new_path.parent, exist_ok=True)
         move(old_path, new_path)
         try:
             os.removedirs(old_path.parent)
         except OSError:
             pass
         self.catalog_manager.edit(book)
+        self.catalog_manager.save()
 
     def refresh(self):
         """Refreshes the vector database component. Necessary if the embed model is changed, for instance."""
@@ -156,12 +160,14 @@ class Librarian:
 
     def get_paths_ids(self) -> list[tuple]:
         return [
-            (self.get_book_path(book), book.id) for book in self.catalog_manager.books
+            (self.get_book_path(book), book.id)
+            for book in self.catalog_manager.books
+            if book.id not in self.config.index_denylist
         ]
 
     def search(self, query: str):
         """Performs a semantic search based on the query by forwarding the request to the search manager."""
-        results = self.search_manager.search(query)
+        results = self.search_manager.search_query(query)
         return results
 
     def question(self, query: str):
@@ -179,7 +185,7 @@ class Librarian:
     def delete_book(self, id):
         book = self.info(id)
         book_path = self.get_book_path(book)
-        send2trash(str(book_path))
+        send2trash(book_path)
         try:
             os.removedirs(book_path.parent)
         except OSError:

@@ -18,7 +18,7 @@ from librarian import Config, Librarian
 from search_manager import SearchResult
 from utils import defined_classifications, get_resource_path
 
-if os.name == "nt":
+if sys.platform == "win32":
     import win32api
     import win32con
     from py_setenv import setenv
@@ -35,7 +35,7 @@ class App:
         return [path.lower() for path in contents.split(";")]
 
     def install(self, user=False):
-        if os.name == "nt":
+        if sys.platform == "win32":
             contents = setenv("Path", user=user)
             lower_paths = self.get_env_paths(contents)
 
@@ -49,7 +49,7 @@ class App:
             )
 
     def uninstall(self):
-        if os.name == "nt":
+        if sys.platform == "win32":
             privileges = [False, True]
             for user in privileges:
                 contents = setenv("Path", user=user)
@@ -80,7 +80,7 @@ class App:
 
     def create_librarian_dir(self, library_path):
         os.mkdir(library_path)
-        if os.name == "nt":
+        if sys.platform == "win32":
             win32api.SetFileAttributes(library_path, win32con.FILE_ATTRIBUTE_HIDDEN)
 
     def do_chore(self):
@@ -150,7 +150,9 @@ class App:
                     command = comps[0].lower()
                     match command:
                         case ":add":
-                            path = Path(comps[1].replace('"', ""))
+                            path = Path(
+                                query.removeprefix(comps[0]).lstrip().replace('"', "")
+                            )
                             try:
                                 book = self.get_book_info(extension=path.suffix)
                             except KeyboardInterrupt:
