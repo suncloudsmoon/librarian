@@ -66,6 +66,8 @@ def dump_foundry_local(out_dir: str):
             "download",
             "--id",
             "Microsoft.FoundryLocal",
+            "--version",
+            "0.6.87.59034",
             "--architecture",
             "x64",
             "--download-directory",

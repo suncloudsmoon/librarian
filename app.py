@@ -124,26 +124,23 @@ class App:
         register(self.cleanup)
 
     def start(self):
-        print(
-            end=""
-        )  # prevents prompt_toolkit from throwing 'no windows console found' error
-        try:
-            self.do_chore()
-        except Exception as err:
-            print(HTML(f"<ansired>{err}</ansired>"))
-            os._exit(1)
-        else:
-            try:
-                self.db_refresh_check()
-            except Exception as err:
-                print(HTML(f"<ansired>{err}</ansired>"))
-
+        do_once = True
         while True:
             try:
                 try:
                     query = prompt(">>> ").strip()
                 except KeyboardInterrupt:
                     break
+                else:
+                    if do_once:
+                        try:
+                            self.do_chore()
+                            self.db_refresh_check()
+                        except Exception as err:
+                            print(HTML(f"<ansired>{err}</ansired>"))
+                            os._exit(1)
+                        finally:
+                            do_once = False
 
                 if query.startswith(":"):
                     comps = query.split()
