@@ -85,7 +85,7 @@ pyinstaller==6.16.0
 pyinstaller-hooks-contrib==2025.8
 pyinstaller_versionfile==3.0.1
 pylance==0.36.0
-pypdf==6.1.0
+pypdf==6.4.0
 pyreadline3==3.5.4
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
