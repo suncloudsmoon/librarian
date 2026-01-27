@@ -6,6 +6,7 @@ It also defines a dataclass called Config that stores all configuration settings
 import json
 import os
 from dataclasses import asdict, dataclass, field
+from datetime import date
 from pathlib import Path
 from shutil import move
 
@@ -14,41 +15,54 @@ from prompt_toolkit import HTML
 from prompt_toolkit import print_formatted_text as print
 from send2trash import send2trash
 
-from catalog_manager import Book, CatalogManager
-from search_manager import SearchManager
-from utils import create_classification_cls, get_resource_path
+from .catalog_manager import Book, CatalogManager
+from .search_manager import SearchManager
+from .sync import SyncClient, SyncServer
+from .utils import Git, create_classification_cls, get_resource_path
+
+
+default_embed_model = "sentence-transformers/all-minilm-l6-v2"
 
 
 @dataclass
 class Config:
     """Defines settings that the user can change if needed."""
 
+    enable_version_history: bool = False
     classification_system: str = "dewey"
     exclude_thinking_tag: bool = True
     system_prompt: str = (
         "You are a concise librarian assistant. Use the supplied search-results input to answer the user's query and draw on those documents as evidence. Never mention internal databases, tools, or memory — present findings as if you just retrieved them. When citing, include only source metadata (title, authors, page, id, call_number) inline. Keep answers short, factual, and helpful."
     )
     chat_model: str = "qwen3-0.6b-gpu"
-    embed_model: str = get_resource_path(
-        "models/sentence-transformers/all-minilm-l6-v2"
+    embed_model: str = (
+        get_resource_path("models/sentence-transformers/all-minilm-l6-v2")
+        if Path("models/sentence-transformers/all-minilm-l6-v2").exists()
+        else default_embed_model
     )
+
     index_denylist: list[str] = field(default_factory=list)
 
-    @classmethod
-    def load_from_file(cls, path, default_config: "Config") -> "Config":
-        """Loads from file if the path exists, else will create and return a blank instance of this class."""
-        path = Path(path)
-        if path.exists():
-            contents = path.read_text(encoding="utf-8")
-            return from_dict(Config, json.loads(contents))
-        else:
-            return default_config
 
-    @classmethod
-    def save_to_file(cls, path, config: "Config"):
-        """Dumps this dataclass into a json and then into a file."""
-        contents = json.dumps(asdict(config), indent=4, ensure_ascii=False)
-        Path(path).write_text(contents, encoding="utf-8")
+@dataclass
+class LibrarianNotes:
+    changes_since_last_version: int = 0
+
+
+def load_from_file(cls, path, default_config):
+    """Loads from file if the path exists, else will create and return a blank instance of this class."""
+    path = Path(path)
+    if path.exists():
+        contents = path.read_text(encoding="utf-8")
+        return from_dict(cls, json.loads(contents))
+    else:
+        return default_config
+
+
+def save_to_file(path, config):
+    """Dumps this dataclass into a JSON and then into a file."""
+    contents = json.dumps(asdict(config), indent=4, ensure_ascii=False)
+    Path(path).write_text(contents, encoding="utf-8")
 
 
 class Librarian:
@@ -57,11 +71,12 @@ class Librarian:
     def __init__(self, librarian_path, default_config: Config):
         """Initializes necessary attributes such as config, catalog manager, search manager, etc."""
         self.librarian_path = Path(librarian_path)
-        self.config = Config.load_from_file(
-            self.librarian_path / "config.json", default_config
-        )
+        self.config_path = self.librarian_path / "config.json"
+        self.notes_path = self.librarian_path / "librarian_notes.json"
 
-        self.catalog_manager = CatalogManager(self.librarian_path / "catalog.json")
+        self.config = load_from_file(Config, self.config_path, default_config)
+
+        self.catalog_manager = CatalogManager(self.librarian_path)
         self.search_manager = SearchManager(
             path=self.librarian_path,
             embed_path=self.config.embed_model,
@@ -71,13 +86,26 @@ class Librarian:
         )
 
         type = self.config.classification_system
-        text = Path(self.librarian_path / f"{type}.json").read_text(encoding="utf-8")
+        text = (self.librarian_path / f"{type}.json").read_text(encoding="utf-8")
         self.classification_system = create_classification_cls(type, text)
+
+        # Notes taken by the librarian for making the user experience better
+        self.librarian_notes = load_from_file(
+            LibrarianNotes,
+            self.notes_path,
+            LibrarianNotes(),
+        )
+        if self.librarian_notes.changes_since_last_version >= 5:
+            # Do backup
+            git = Git(self.librarian_path.parent)
+            git.commit(date.today().isoformat())
+            self.librarian_notes.changes_since_last_version = 0
 
     def close(self):
         """Saves configuration files/catalog manager and closes resources held by search manager."""
-        # Save config
-        Config.save_to_file(self.librarian_path / "config.json", self.config)
+        # Save configs
+        save_to_file(self.config_path, self.config)
+        save_to_file(self.notes_path, self.librarian_notes)
 
         # Save catalog manager
         self.catalog_manager.save()
@@ -90,21 +118,24 @@ class Librarian:
             lambda book: book.id in self.config.index_denylist
         )
 
-    def info(self, id: str) -> Book:
+    def info(self, id: str) -> tuple:
         """Returns a Book object identified by id."""
         return self.catalog_manager.get(id)
 
     def exists(self, isbn: str) -> bool:
         return self.catalog_manager.exists(isbn)
 
-    def add(self, path: Path, book: Book):
+    def add(self, path: Path, book: Book, cover_image: str):
         """Adds the given book located in path to the library."""
 
         if not path.exists():
             raise ValueError(f"{path} doesn't exist")
 
-        # add to catalog manager
-        self.catalog_manager.add(book)
+        # Count as a change
+        self.librarian_notes.changes_since_last_version += 1
+
+        # Add to catalog manager
+        self.catalog_manager.add(book, cover_image)
         self.catalog_manager.save()
 
         try:
@@ -123,6 +154,9 @@ class Librarian:
 
     def remove(self, id):
         """Removes the book specified by id from librarian."""
+        # Count as a change
+        self.librarian_notes.changes_since_last_version += 1
+
         self.delete_book(id)
         self.catalog_manager.remove(id)
         self.catalog_manager.save()
@@ -131,7 +165,10 @@ class Librarian:
             self.config.index_denylist.remove(id)
 
     def edit(self, book: Book):
-        old_book = self.info(book.id)
+        # Count as a change
+        self.librarian_notes.changes_since_last_version += 1
+
+        old_book = self.info(book.id)[0]
         old_path = self.get_book_path(old_book)
         new_path = self.get_book_path(book)
 
@@ -173,6 +210,23 @@ class Librarian:
     def question(self, query: str):
         return self.search_manager.question(query)
 
+    def sync(self, is_client: bool, password: str, server_addr: tuple = None):
+        home_dir = self.librarian_path.parent
+        if is_client:
+            client = SyncClient(password)
+            client.start(
+                directory=home_dir,
+                server_addr=server_addr,
+                exclude_paths=[self.librarian_path.relative_to(".") / "config.json"],
+                strict=False,
+            )
+        else:
+            server = SyncServer(
+                password=password,
+                server_address=server_addr,
+            )
+            server.start(home_dir)
+
     def get_book_path(self, book: Book) -> Path:
         return Path(
             os.path.join(
@@ -183,7 +237,7 @@ class Librarian:
         )
 
     def delete_book(self, id):
-        book = self.info(id)
+        book = self.info(id)[0]
         book_path = self.get_book_path(book)
         send2trash(book_path)
         try:

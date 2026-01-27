@@ -3,6 +3,8 @@
 import json
 import os
 from dataclasses import asdict, dataclass, field
+import subprocess
+from pathlib import Path
 
 from dacite import from_dict
 
@@ -109,3 +111,27 @@ def create_classification_cls(type: str, text: str):
 def get_resource_path(path):
     app_dir = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(app_dir, path)
+
+
+class Git:
+
+    def __init__(self, working_directory: Path):
+        self.working_directory = working_directory
+        git_folder = working_directory / ".git"
+        if not git_folder.exists():
+            self.initialize()
+
+    def initialize(self):
+        subprocess.call(args=[
+            "git", "init", "-C", self.working_directory
+        ], stdout=open(os.devnull, "wb"))
+    
+    def stage(self):
+        subprocess.call(args=[
+            "git", "add", ".", "-C", self.working_directory
+        ], stdout=open(os.devnull, "wb"))
+
+    def commit(self, message: str):
+        subprocess.call(args=[
+            "git", "commit", "-m", message, "-C", self.working_directory
+        ], stdout=open(os.devnull, "wb"))

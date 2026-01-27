@@ -14,7 +14,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import lancedb
-from foundry_local import FoundryLocalManager
 from lancedb.rerankers import LinearCombinationReranker
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import LanceDB
@@ -23,8 +22,10 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from openai import OpenAI
 from semchunk import chunkerify
 
-from catalog_manager import Book, CatalogManager
+from .catalog_manager import Book, CatalogManager
 
+if sys.platform == "win32":
+    from foundry_local import FoundryLocalManager
 
 @dataclass
 class SearchResult(Book):
@@ -77,7 +78,7 @@ class SearchManager:
 
     def __init__(
         self,
-        path: str,
+        path: Path,
         embed_path: str,
         chat_model: str,
         system_prompt: str,
@@ -92,7 +93,7 @@ class SearchManager:
 
         self.create_embedding_client()
 
-        self.db = lancedb.connect(f"{path}/vectordb")
+        self.db = lancedb.connect(path / "vectordb")
         self.create_vector_store()
 
         self.foundry_local = None
@@ -165,7 +166,7 @@ class SearchManager:
         loader = PyPDFLoader(path)
         docs = loader.load()
         documents = []
-        for i, doc in enumerate(docs):
+        for index, doc in enumerate(docs):
             text = doc.page_content
             clean_content = " ".join(text.split())
             chunks = chunker(
@@ -173,7 +174,7 @@ class SearchManager:
             )  # overlap should be 10%-20% max
             for chunk in chunks:
                 documents.append(
-                    Document(page_content=chunk, metadata={"id": id, "page": i + 1})
+                    Document(page_content=chunk, metadata={"id": id, "page": index + 1})
                 )
         if documents:
             self.vector_store.add_documents(documents)
@@ -194,7 +195,7 @@ class SearchManager:
             SearchResult(
                 page=result.metadata["page"],
                 page_content=result.page_content,
-                **asdict(self.catalog_manager.get(result.metadata["id"])),
+                **asdict(self.catalog_manager.get(result.metadata["id"])[0]),
             )
             for result in results
         ]

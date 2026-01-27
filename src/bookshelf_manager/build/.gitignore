@@ -6,5 +6,7 @@ installer/
 legal/
 librarian/
 deps/
+pkgroot/
+UninstallScripts/
 file_version_info.txt
 librarian.spec

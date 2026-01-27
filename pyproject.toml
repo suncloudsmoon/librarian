@@ -1,0 +1,29 @@
+[build-system]
+requires = [ "hatchling >= 1.27",]
+build-backend = "hatchling.build"
+
+[project]
+dependencies = [ "cryptography >= 46.0.3", "dacite >= 1.9.2", "foundry-local-sdk >= 0.5.1", "lancedb >= 0.26.1", "langchain-community >= 0.4.1", "langchain-huggingface >= 1.2.0", "Markdown >= 3.10.1", "openai >= 2.14.0", "pikepdf >= 10.2.0", "platformdirs >= 4.5.1", "prompt_toolkit >= 3.0.52", "PyMuPDF >= 1.26.7", "pypandoc >= 1.16.2", "PyYAML >= 6.0.3", "semchunk >= 3.2.5", "Send2Trash >= 2.0.0", "sentence-transformers >= 5.2.0", "pywin32; platform_system == 'Windows'",]
+name = "bookshelf-manager"
+version = "0.7.0.0"
+description = "A virtual librarian to manage your books in one place."
+keywords = [ "librarian", "library", "knowledge", "bookshelf", "manager", "dewey", "library classification system", "dewey decimal system", "library of congress", "loc", "virtual", "digital transition",]
+readme = "README.md"
+requires-python = ">= 3.10"
+classifiers = [ "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: 3.14", "Operating System :: OS Independent", "Environment :: Console", "License :: OSI Approved :: MIT License", "Topic :: Utilities", "Topic :: Education", "Intended Audience :: Education", "Intended Audience :: End Users/Desktop",]
+license = "MIT"
+license-files = [ "LICEN[CS]E*",]
+[[project.authors]]
+name = "suncloudsmoon"
+email = "farsaturn@outlook.com"
+
+[project.urls]
+Homepage = "https://github.com/suncloudsmoon/librarian"
+Issues = "https://github.com/suncloudsmoon/librarian/issues"
+
+[project.scripts]
+bookshelf-manager = "bookshelf_manager:main"
+librarian = "bookshelf_manager:main"
+
+[tool.hatch.build]
+exclude = [ "requirements.txt", "configure_package_build.py", "localize.py", "/**/__pycache__", "src/.librarian", "src/bookshelf_manager/build", "src/bookshelf_manager/models", "/.vscode",]

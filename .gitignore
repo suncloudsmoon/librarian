@@ -1,5 +1,4 @@
-__pycache__/
-.olive-cache/
-.librarian/
-models/
-samples/
+.idea/
+dist/
+src/.librarian
+**/.DS_Store

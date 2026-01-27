@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 from dataclasses import asdict
 from pathlib import Path
 from uuid import uuid4
@@ -8,9 +7,12 @@ import subprocess
 from shutil import copy, move
 from huggingface_hub import HfFileSystem
 
-sys.path.append(".")
-from utils import Category, ClassificationSystem
-from catalog_manager import Book
+
+from ..utils import Category, ClassificationSystem
+from ..catalog_manager import Book
+import fitz
+from io import BytesIO
+from ..librarian import Librarian
 
 
 # model conversion time
@@ -141,7 +143,32 @@ def create_classification_system(dest_dir: str, data_dir: str, type: str):
     systems[type](dest_dir, data_dir)
 
 
-def convert_old_catalog(catalog_path):
+def convert_old_librarian_v10(librarian_path):
+    librarian: Librarian = Librarian(librarian_path, default_config=None)
+    
+    catalog_path = Path(librarian.librarian_path / "catalog.json")
+    contents: str = catalog_path.read_text(encoding="utf-8")
+    catalog: list[dict] = json.loads(contents)
+    
+    for metadata in catalog:
+        id = metadata["id"]
+        filepath = librarian.get_book_path(librarian.info(id)[0])
+        filepath_suffix = filepath.suffix
+        if filepath_suffix.lower() == ".pdf":
+            pdf = fitz.open(filepath)
+            page = pdf.load_page(0)
+            pixels = page.get_pixmap(dpi=300)
+            buffer = BytesIO(pixels.tobytes(output="jpeg"))
+            binary_data = buffer.getvalue()
+        else:
+            binary_data = None
+        
+        if binary_data:
+            librarian.catalog_manager.cover_image_manager.add(id, cover_image=binary_data)
+
+    print("⚒️  Sucessfully migrated librarian to v1.1!")
+
+def convert_old_catalog_v10(catalog_path):
     contents: str = Path(catalog_path).read_text(encoding="utf-8")
     old_catalog: dict = json.loads(contents)
     new_catalog: list[dict] = []
@@ -171,7 +198,7 @@ def convert_old_catalog(catalog_path):
         )
     contents: str = json.dumps(new_catalog, indent=4, ensure_ascii=False)
     Path(catalog_path).write_text(contents, encoding="utf-8")
-    print("⚒️  Sucessfully converted catalog")
+    print("⚒️  Sucessfully converted catalog v1.0")
 
 
 def create_legal(
@@ -213,3 +240,4 @@ def create_legal(
 
 
 # convert_old_catalog("library-catalog.json")
+convert_old_librarian_v10("/Volumes/dev/Core Library/.librarian")
