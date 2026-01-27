@@ -218,12 +218,13 @@ class Librarian:
                 directory=home_dir,
                 server_addr=server_addr,
                 exclude_paths=[],
+                exclude_patterns=["**/.DS_Store"],
                 strict=False,
             )
         else:
             server = SyncServer(
                 password=password,
-                server_address=server_addr,
+                server_port=server_addr[1],
             )
             server.start(home_dir)
 

@@ -133,14 +133,14 @@ class SocketCommunication:
 class SyncServer(SocketCommunication):
 
     def __init__(
-        self, password: str, server_address: tuple = (socket.gethostname(), 1230)
+        self, password: str, server_port: int = 1230
     ):
         super().__init__(password)
         self.server_socket = socket.socket(
             family=socket.AF_INET, type=socket.SOCK_STREAM
         )
-        print(f"Server binding to {server_address}")
-        self.server_socket.bind(server_address)
+        print(f"Server address: {socket.gethostname()}:{server_port}")
+        self.server_socket.bind(("0.0.0.0", server_port))
         self.server_socket.listen(1)
 
     def start(self, directory: Path):
@@ -194,7 +194,8 @@ class SyncClient(SocketCommunication):
         self,
         directory: Path,
         server_addr: tuple = (socket.gethostname(), 1230),
-        exclude_paths: list = [],
+        exclude_paths: list[Path] = [],
+        exclude_patterns: list[str] = [],
         strict: bool = False,
     ):
         directory.mkdir(exist_ok=True)
@@ -226,7 +227,9 @@ class SyncClient(SocketCommunication):
             while True:
                 info = self.receive_info(self.client_socket)
                 filepath = Path(info["path"])
-                if filepath not in exclude_paths:
+                
+                excluded_pattern = any(filepath.full_match(pattern) for pattern in exclude_patterns)
+                if filepath not in exclude_paths and not excluded_pattern:
                     if not filepath.exists():
                         self.get_file(filepath)
                     else:

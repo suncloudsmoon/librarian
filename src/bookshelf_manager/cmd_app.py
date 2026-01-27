@@ -262,8 +262,7 @@ class CmdApp:
                             )
                             if mode == "server":
                                 is_client = False
-                                server_addr = (socket.gethostname(), 1230)
-                                print(f"Binding to {server_addr[0]}:{server_addr[1]}")
+                                server_addr = ("0.0.0.0", 1230)
                             elif mode == "client":
                                 is_client = True
                                 infos = prompt(
