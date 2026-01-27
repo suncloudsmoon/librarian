@@ -7,7 +7,7 @@ Semantic search enables users to find relevant books based on natural language q
 pip install bookshelf-manager
 ```
 
-# How to use
+## How to use
 It is possible to launch librarian by typing either 'librarian' or 'bookshelf-manager' in the terminal and hitting enter.
 ```
 >>> :help

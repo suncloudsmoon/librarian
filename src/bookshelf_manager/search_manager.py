@@ -15,7 +15,7 @@ from pathlib import Path
 
 import lancedb
 from lancedb.rerankers import LinearCombinationReranker
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_community.vectorstores import LanceDB
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -163,7 +163,7 @@ class SearchManager:
             n_ctx,
         )
 
-        loader = PyPDFLoader(path)
+        loader = PyMuPDFLoader(path)
         docs = loader.load()
         documents = []
         for index, doc in enumerate(docs):
