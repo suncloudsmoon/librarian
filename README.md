@@ -12,16 +12,17 @@ It is possible to launch librarian by typing either 'librarian' or 'bookshelf-ma
 ```
 >>> :help
 Commands:
-  :add [path]               Adds a book to the library given by the path.
-  :clear                    Clears the console window.
-  :edit [id]                Edits the book's metadata.
-  :exam                     Creates an exam by randomly picking 3 books in the library and generates questions based off of it.
-  :go [#]                   Opens the file based on the search result #.
-  :help                     Displays a list of commands.
-  :info [#]                 Shows metadata about a given book identified by search result #.
-  :legal                    Shows all the legal notices.
-  :question [prompt]        Prompts the llm with context from ordinary search.
-  :remove [id]              Removes the book idenitifed by id from the book catalog.
+  :add [path]               Adds a book to the library given by the path
+  :clear                    Clears the console window
+  :edit [id]                Edits the book's metadata
+  :exam                     Creates an exam by randomly picking 3 books in the library and generates questions based off of it
+  :go [#]                   Opens the file based on the search result #
+  :help                     Displays a list of commands
+  :info [#]                 Shows metadata about a given book identified by search result #
+  :legal                    Shows all the legal notices
+  :question [prompt]        Prompts the llm with context from ordinary search
+  :remove [id]              Removes the book idenitifed by id from the book catalog
+  :sync                     Sync library contents between local lan devices
 ```
 
 ## To-Do

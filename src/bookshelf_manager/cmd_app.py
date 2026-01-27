@@ -279,6 +279,9 @@ class CmdApp:
                                 password=password,
                                 server_addr=server_addr,
                             )
+
+                            # Refresh the librarian instance after syncing
+                            do_once = True
                         case _:
                             raise ValueError(f'unknown command: "{command}"')
                     continue
@@ -454,16 +457,17 @@ class CmdApp:
 
     def print_help(self):
         commands = {
-            ":add [path]": "adds a book to the library given by the path.",
-            ":clear": "clears the console window.",
-            ":edit [id]": "edits the book's metadata.",
-            ":exam": "creates an exam by randomly picking 3 books in the library and generates questions based off of it.",
-            ":go [#]": "opens the file based on the search result #.",
-            ":help": "displays a list of commands.",
-            ":info [#]": "shows metadata about a given book identified by search result #.",
-            ":legal": "shows all the legal notices.",
-            ":question [prompt]": "prompts the llm with context from ordinary search.",
-            ":remove [id]": "removes the book idenitifed by id from the book catalog.",
+            ":add [path]": "adds a book to the library given by the path",
+            ":clear": "clears the console window",
+            ":edit [id]": "edits the book's metadata",
+            ":exam": "creates an exam by randomly picking 3 books in the library and generates questions based off of it",
+            ":go [#]": "opens the file based on the search result #",
+            ":help": "displays a list of commands",
+            ":info [#]": "shows metadata about a given book identified by search result #",
+            ":legal": "shows all the legal notices",
+            ":question [prompt]": "prompts the llm with context from ordinary search",
+            ":remove [id]": "removes the book idenitifed by id from the book catalog",
+            ":sync": "sync library contents between local LAN devices"
         }
         print("Commands:")
         for command, info in commands.items():
