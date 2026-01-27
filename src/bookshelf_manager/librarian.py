@@ -100,17 +100,10 @@ class Librarian:
             git = Git(self.librarian_path.parent)
             git.commit(date.today().isoformat())
             self.librarian_notes.changes_since_last_version = 0
+            save_to_file(self.notes_path, self.librarian_notes) # autosave
 
     def close(self):
-        """Saves configuration files/catalog manager and closes resources held by search manager."""
-        # Save configs
-        save_to_file(self.config_path, self.config)
-        save_to_file(self.notes_path, self.librarian_notes)
-
-        # Save catalog manager
-        self.catalog_manager.save()
-
-        # closes the search manager
+        """Closes resources held by search manager."""
         self.search_manager.close()
 
     def is_database_mismatch(self) -> bool:
@@ -133,16 +126,17 @@ class Librarian:
 
         # Count as a change
         self.librarian_notes.changes_since_last_version += 1
+        save_to_file(self.notes_path, self.librarian_notes) # autosave
 
         # Add to catalog manager
         self.catalog_manager.add(book, cover_image)
-        self.catalog_manager.save()
 
         try:
             # add to search manager
             self.search_manager.add(path, book.id)
         except ValueError:
             self.config.index_denylist.append(book.id)
+            save_to_file(self.config_path, self.config) # autosave
             raise
         else:
             self.search_manager.index()
@@ -156,17 +150,19 @@ class Librarian:
         """Removes the book specified by id from librarian."""
         # Count as a change
         self.librarian_notes.changes_since_last_version += 1
+        save_to_file(self.notes_path, self.librarian_notes) # autosave
 
         self.delete_book(id)
         self.catalog_manager.remove(id)
-        self.catalog_manager.save()
         self.search_manager.remove(id)
         if id in self.config.index_denylist:
             self.config.index_denylist.remove(id)
+            save_to_file(self.config_path, self.config) # autosave
 
     def edit(self, book: Book):
         # Count as a change
         self.librarian_notes.changes_since_last_version += 1
+        save_to_file(self.notes_path, self.librarian_notes) # autosave
 
         old_book = self.info(book.id)[0]
         old_path = self.get_book_path(old_book)
@@ -179,7 +175,6 @@ class Librarian:
         except OSError:
             pass
         self.catalog_manager.edit(book)
-        self.catalog_manager.save()
 
     def refresh(self):
         """Refreshes the vector database component. Necessary if the embed model is changed, for instance."""
@@ -193,6 +188,7 @@ class Librarian:
             except ValueError as err:
                 print(HTML(f"<ansired>Indexing failure: {err}</ansired>"))
                 self.config.index_denylist.append(id)
+                save_to_file(self.config_path, self.config) # autosave
         self.search_manager.index()
 
     def get_paths_ids(self) -> list[tuple]:

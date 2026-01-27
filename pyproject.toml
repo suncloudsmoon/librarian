@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 dependencies = [ "cryptography >= 46.0.3", "dacite >= 1.9.2", "foundry-local-sdk >= 0.5.1", "lancedb >= 0.26.1", "langchain-community >= 0.4.1", "langchain-huggingface >= 1.2.0", "Markdown >= 3.10.1", "openai >= 2.14.0", "pikepdf >= 10.2.0", "platformdirs >= 4.5.1", "prompt_toolkit >= 3.0.52", "PyMuPDF >= 1.26.7", "pypandoc >= 1.16.2", "PyYAML >= 6.0.3", "semchunk >= 3.2.5", "Send2Trash >= 2.0.0", "sentence-transformers >= 5.2.0", "pywin32; platform_system == 'Windows'",]
 name = "bookshelf-manager"
-version = "0.7.1.0"
+version = "0.7.1.1"
 description = "A virtual librarian to manage your books in one place."
 keywords = [ "librarian", "library", "knowledge", "bookshelf", "manager", "dewey", "library classification system", "dewey decimal system", "library of congress", "loc", "virtual", "digital transition",]
 readme = "README.md"

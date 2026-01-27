@@ -94,6 +94,7 @@ class CatalogManager:
             raise ValueError(f"book {book.id} already exists")
         self.books.append(book)
         self.cover_image_manager.add(book.id, cover_image)
+        self.save()
 
     def remove(self, id: str):
         """Removes the given book from the library catalog."""
@@ -104,12 +105,14 @@ class CatalogManager:
                 self.books.remove(book)
                 self.cover_image_manager.remove(id)
                 break
+        self.save()
 
     def edit(self, edited_book: Book):
         for i, book in enumerate(self.books):
             if book.id == edited_book.id:
                 self.books[i] = edited_book
                 break
+        self.save()
 
     def get(self, id: str) -> tuple:
         for book in self.books:
