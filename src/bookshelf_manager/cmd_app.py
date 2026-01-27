@@ -457,7 +457,7 @@ class CmdApp:
             ":add [path]": "adds a book to the library given by the path.",
             ":clear": "clears the console window.",
             ":edit [id]": "edits the book's metadata.",
-            ":exam": "creates an exam by randomly picking 3 books in the library and generating questions based off of it.",
+            ":exam": "creates an exam by randomly picking 3 books in the library and generates questions based off of it.",
             ":go [#]": "opens the file based on the search result #.",
             ":help": "displays a list of commands.",
             ":info [#]": "shows metadata about a given book identified by search result #.",
