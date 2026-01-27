@@ -217,7 +217,7 @@ class Librarian:
             client.start(
                 directory=home_dir,
                 server_addr=server_addr,
-                exclude_paths=[self.librarian_path.relative_to(".") / "config.json"],
+                exclude_paths=[],
                 strict=False,
             )
         else:
