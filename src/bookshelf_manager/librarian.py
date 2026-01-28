@@ -21,24 +21,21 @@ from .sync import SyncClient, SyncServer
 from .utils import Git, create_classification_cls, get_resource_path
 
 
-default_embed_model = "sentence-transformers/all-minilm-l6-v2"
-
-
 @dataclass
 class Config:
     """Defines settings that the user can change if needed."""
 
-    enable_version_history: bool = False
+    enable_version_history: bool = True
     classification_system: str = "dewey"
-    exclude_thinking_tag: bool = True
+    exclude_thinking_tag: bool = True  # deprecated
     system_prompt: str = (
         "You are a concise librarian assistant. Use the supplied search-results input to answer the user's query and draw on those documents as evidence. Never mention internal databases, tools, or memory — present findings as if you just retrieved them. When citing, include only source metadata (title, authors, page, id, call_number) inline. Keep answers short, factual, and helpful."
     )
-    chat_model: str = "qwen3-0.6b-gpu"
+    chat_model: str = "qwen3-0.6b-gpu"  # deprecated
     embed_model: str = (
         get_resource_path("models/sentence-transformers/all-minilm-l6-v2")
         if Path("models/sentence-transformers/all-minilm-l6-v2").exists()
-        else default_embed_model
+        else "sentence-transformers/all-minilm-l6-v2"
     )
 
     index_denylist: list[str] = field(default_factory=list)
@@ -95,12 +92,15 @@ class Librarian:
             self.notes_path,
             LibrarianNotes(),
         )
-        if self.librarian_notes.changes_since_last_version >= 5:
+        if (
+            self.config.enable_version_history
+            and self.librarian_notes.changes_since_last_version >= 5
+        ):
             # Do backup
             git = Git(self.librarian_path.parent)
             git.commit(date.today().isoformat())
             self.librarian_notes.changes_since_last_version = 0
-            save_to_file(self.notes_path, self.librarian_notes) # autosave
+            save_to_file(self.notes_path, self.librarian_notes)  # autosave
 
     def close(self):
         """Closes resources held by search manager."""
@@ -126,7 +126,7 @@ class Librarian:
 
         # Count as a change
         self.librarian_notes.changes_since_last_version += 1
-        save_to_file(self.notes_path, self.librarian_notes) # autosave
+        save_to_file(self.notes_path, self.librarian_notes)  # autosave
 
         # Add to catalog manager
         self.catalog_manager.add(book, cover_image)
@@ -136,7 +136,7 @@ class Librarian:
             self.search_manager.add(path, book.id)
         except ValueError:
             self.config.index_denylist.append(book.id)
-            save_to_file(self.config_path, self.config) # autosave
+            save_to_file(self.config_path, self.config)  # autosave
             raise
         else:
             self.search_manager.index()
@@ -150,19 +150,19 @@ class Librarian:
         """Removes the book specified by id from librarian."""
         # Count as a change
         self.librarian_notes.changes_since_last_version += 1
-        save_to_file(self.notes_path, self.librarian_notes) # autosave
+        save_to_file(self.notes_path, self.librarian_notes)  # autosave
 
         self.delete_book(id)
         self.catalog_manager.remove(id)
         self.search_manager.remove(id)
         if id in self.config.index_denylist:
             self.config.index_denylist.remove(id)
-            save_to_file(self.config_path, self.config) # autosave
+            save_to_file(self.config_path, self.config)  # autosave
 
     def edit(self, book: Book):
         # Count as a change
         self.librarian_notes.changes_since_last_version += 1
-        save_to_file(self.notes_path, self.librarian_notes) # autosave
+        save_to_file(self.notes_path, self.librarian_notes)  # autosave
 
         old_book = self.info(book.id)[0]
         old_path = self.get_book_path(old_book)
@@ -188,7 +188,7 @@ class Librarian:
             except ValueError as err:
                 print(HTML(f"<ansired>Indexing failure: {err}</ansired>"))
                 self.config.index_denylist.append(id)
-                save_to_file(self.config_path, self.config) # autosave
+                save_to_file(self.config_path, self.config)  # autosave
         self.search_manager.index()
 
     def get_paths_ids(self) -> list[tuple]:

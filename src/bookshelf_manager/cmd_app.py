@@ -6,7 +6,6 @@ import os
 warnings.filterwarnings("ignore", message=".*Pydantic V1.*", category=UserWarning)
 
 import re
-import socket
 import sys
 import webbrowser
 from atexit import register
@@ -344,9 +343,10 @@ class CmdApp:
             isbn = re.sub(r"[^0-9]", "", prompt("ISBN: ", default=book.isbn))
             if len(isbn) == 0:
                 isbn = "0" * 13
+
             if self.librarian.exists(isbn):
                 print(error(f"ISBN {isbn} already exists in the database, try again."))
-            if self.is_valid_isbn(isbn):
+            elif self.is_valid_isbn(isbn):
                 break
             print(error("Invalid ISBN, try again."))
 
@@ -467,7 +467,7 @@ class CmdApp:
             ":legal": "shows all the legal notices",
             ":question [prompt]": "prompts the llm with context from ordinary search",
             ":remove [id]": "removes the book idenitifed by id from the book catalog",
-            ":sync": "sync library contents between local LAN devices"
+            ":sync": "sync library contents between local LAN devices",
         }
         print("Commands:")
         for command, info in commands.items():

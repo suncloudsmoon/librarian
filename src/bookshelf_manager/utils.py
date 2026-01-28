@@ -115,23 +115,23 @@ def get_resource_path(path):
 
 class Git:
 
-    def __init__(self, working_directory: Path):
-        self.working_directory = working_directory
-        git_folder = working_directory / ".git"
+    def __init__(self, work_dir: Path):
+        self.work_dir = work_dir
+        git_folder = work_dir / ".git"
         if not git_folder.exists():
             self.initialize()
 
     def initialize(self):
         subprocess.call(args=[
-            "git", "init", "-C", self.working_directory
+            "git", "-C", self.work_dir, "init", 
         ], stdout=open(os.devnull, "wb"))
     
     def stage(self):
         subprocess.call(args=[
-            "git", "add", ".", "-C", self.working_directory
+            "git", "-C", self.work_dir, "add", "."
         ], stdout=open(os.devnull, "wb"))
 
     def commit(self, message: str):
         subprocess.call(args=[
-            "git", "commit", "-m", message, "-C", self.working_directory
+            "git", "-C", self.work_dir, "commit", "-m", message
         ], stdout=open(os.devnull, "wb"))

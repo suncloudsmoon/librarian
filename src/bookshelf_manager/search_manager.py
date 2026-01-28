@@ -153,11 +153,11 @@ class SearchManager:
 
     def add(self, path: Path, id: str):
         if not path.name.endswith(".pdf"):
-            return
+            raise ValueError(f"librarian does not support indexing files other than PDF")
 
         n_ctx = 256
         if self.embed_model._client.tokenizer.model_max_length < n_ctx:
-            raise ValueError(f"{self.embed_path} has a context length below {n_ctx}")
+            raise RuntimeError(f"{self.embed_path} has a context length below {n_ctx}")
         chunker = chunkerify(
             self.get_len_tokens,
             n_ctx,
@@ -179,7 +179,7 @@ class SearchManager:
         if documents:
             self.vector_store.add_documents(documents)
         else:
-            raise ValueError(f"could not extract text from '{path}'")
+            raise RuntimeError(f"could not extract text from '{path}'")
 
     def remove(self, id: str):
         self.vector_store.delete(filter=f"`metadata`.`id` = '{id}'")
