@@ -93,7 +93,8 @@ class CatalogManager:
         if self.__exists_id(book.id):
             raise ValueError(f"book {book.id} already exists")
         self.books.append(book)
-        self.cover_image_manager.add(book.id, cover_image)
+        if cover_image:
+            self.cover_image_manager.add(book.id, cover_image)
         self.save()
 
     def remove(self, id: str):

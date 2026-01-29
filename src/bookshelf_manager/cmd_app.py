@@ -344,11 +344,11 @@ class CmdApp:
             if len(isbn) == 0:
                 isbn = "0" * 13
 
-            if self.librarian.exists(isbn):
-                print(error(f"ISBN {isbn} already exists in the database, try again."))
+            if isbn != "0"*13 and self.librarian.exists(isbn):
+                print(error(f"ISBN {isbn} already exists in the database"))
             elif self.is_valid_isbn(isbn):
                 break
-            print(error("Invalid ISBN, try again."))
+            print(error("Invalid ISBN, try again"))
 
         while True:
             call_number = prompt("Call Number: ", default=book.call_number).strip()
