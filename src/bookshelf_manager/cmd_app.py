@@ -341,10 +341,11 @@ class CmdApp:
         error = lambda msg: HTML(f"<ansired>{msg}</ansired>")
         while True:
             isbn = re.sub(r"[^0-9]", "", prompt("ISBN: ", default=book.isbn))
+            zero_isbn = "0" * 13
             if len(isbn) == 0:
-                isbn = "0" * 13
+                isbn = zero_isbn
 
-            if isbn != "0"*13 and self.librarian.exists(isbn):
+            if isbn != zero_isbn and self.librarian.exists(isbn):
                 print(error(f"ISBN {isbn} already exists in the database"))
             elif self.is_valid_isbn(isbn):
                 break
