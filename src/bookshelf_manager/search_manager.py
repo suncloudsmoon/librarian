@@ -42,7 +42,7 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.graph_stores.kuzu import KuzuPropertyGraphStore
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.vector_stores.lancedb import LanceDBVectorStore
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from semchunk import chunkerify
 
 from .catalog_manager import Book, CatalogManager, Metadata
@@ -52,7 +52,7 @@ from llama_index.core import Settings
 
 class OCRResult(BaseModel):
     text: str
-    refused: bool
+    refused: bool = Field(description="If the image shown represents a cover of a book, table of contents, references, or index, set refused to True. Otherwise, set refused to False.")
 
 
 @dataclass
@@ -228,14 +228,14 @@ class SearchManager:
             if self.enable_enhanced_ocr:
                 image_bytes = page.get_pixmap().tobytes(output="jpg")
                 image_data = base64.urlsafe_b64encode(image_bytes).decode()
-                system_prompt = "Extract all text shown in the text except for page numbers, figure numbers, and figure captions. If the image shown represents a cover of a book, table of contents, references, or index, set refused to True. Represent any math expressions using the LaTeX notation."
+                system_prompt = "Extract all text shown in the text except for page numbers, figure numbers, and figure captions. Represent any math expressions using the LaTeX notation. If the image shown represents a cover of a book, table of contents, references, or index, set refused to True. Otherwise, set refused to False."
                 
                 # switch to plain text output and a tool call to refuse it?
                 ocr_result: OCRResult = ask_image(
                     self.ocr_llm, system_prompt, OCRResult, image_data
                 )
                 if not ocr_result.refused:
-                    text = ocr_result.text
+                    text = ocr_result.text.replace("\\n", "\n").replace("\'", "'").replace('\"', '"')
                 else:
                     continue
             else:
