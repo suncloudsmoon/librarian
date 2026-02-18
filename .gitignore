@@ -1,4 +1,4 @@
 .idea/
 dist/
-src/.librarian
+.librarian/
 **/.DS_Store

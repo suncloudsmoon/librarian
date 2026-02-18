@@ -1,0 +1,10 @@
+{
+    "Name": "qwen3-0.6b-gpu",
+    "PromptTemplate": {
+        "system": "<|im_start|>system\n{Content}<tools>\n{Tool}\n</tools><|im_end|>",
+        "user": "<|im_start|>user\n/think{Content}<|im_end|>",
+        "assistant": "<|im_start|>assistant\n{Content}<|im_end|>",
+        "tool": "<tools>\n{Tool}\n</tools>",
+        "prompt": "<|im_start|>system\nYou are a helpful assistant with these tools. It is deemed mandatory to call functions. If you decide to call functions:\n* prefix function calls with functools marker (no closing marker required)\n* all function calls should be generated in a single JSON list formatted as functools[{\"name\": [function name], \"arguments\": [function arguments as JSON]}, ...]\n * follow the provided JSON schema. Do not hallucinate arguments or values. Do not blindly copy values from the provided samples\n * respect the argument type formatting. E.g., if the type is number and format is float, write value 7 as 7.0\n * make sure you pick the right functions that match the user intent<|im_end|>\n\n<|im_start|>user\n/think{Content}<|im_end|>\n<|im_start|>assistant"
+    }
+}

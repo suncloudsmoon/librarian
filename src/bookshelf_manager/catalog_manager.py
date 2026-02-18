@@ -7,13 +7,37 @@ from pathlib import Path
 from dacite import from_dict
 from send2trash import send2trash
 
-# Book version 1.1
+
+@dataclass
+class Metadata:
+    """For defining metadata for different mediums such as music, audio recordings, movies, etc."""
+    id: str
+    hash: str
+    filename: str
+    call_number: str
+    type: str
+    data: Book | None
+
+    def __lt__(self, other: "Metadata"):
+        return self.filename.casefold() < other.filename.casefold()
+
+    def __str__(self):
+        result = ""
+        for key, val in asdict(self).items():
+            key = key.replace("_", " ").title()
+            if isinstance(val, Book):
+                result += '\n' + str(val)
+            elif isinstance(val, list):
+                result += f"{key}: {str(val)[1:-1].replace("'", "")}\n"
+            else:
+                result += f"{key}: {val}\n"
+        return result
+
+
 @dataclass
 class Book:
-    id: str
-    filename: str
+    """Book version 1.1"""
     isbn: str
-    call_number: str
     title: str
     authors: list[str]
     publisher: str
@@ -45,10 +69,10 @@ class CoverImageManager:
     def __init__(self, dir: Path):
         self.dir = dir
         self.dir.mkdir(exist_ok=True)
-    
+
     def get_path(self, id: str):
         return (self.dir / id).with_suffix(".jpg")
-    
+
     def add(self, id: str, cover_image: bytes):
         path = self.get_path(id)
         path.write_bytes(cover_image)
@@ -56,7 +80,7 @@ class CoverImageManager:
     def remove(self, id: str):
         path = self.get_path(id)
         if path.exists():
-            send2trash()
+            send2trash(path)
 
     def get(self, id: str) -> bytes | None:
         path = self.get_path(id)
@@ -66,64 +90,85 @@ class CoverImageManager:
 class CatalogManager:
     """Manages a library catalog."""
 
-    def __init__(self, dir: Path):
-        self.catalog_json = dir / "catalog.json"
-        self.cover_image_manager = CoverImageManager(dir / "cover_images")
-        self.books = []
-        if self.catalog_json.exists():
-            contents = json.loads(self.catalog_json.read_text(encoding="utf-8"))
-            self.books = [from_dict(Book, data) for data in contents]
+    def __init__(self, home_dir: Path):
+        self.catalog_dir = home_dir / "catalog"
+        self.catalog_dir.mkdir(exist_ok=True)
+        self.cover_image_manager = CoverImageManager(home_dir / "cover_images")
 
-    def save(self):
-        for book in self.books:
-            book.authors.sort()
-        book_list = [asdict(book) for book in sorted(self.books)]
-        contents = json.dumps(book_list, indent=4, ensure_ascii=False)
-        self.catalog_json.write_text(contents, encoding="utf-8")
+    def save(self, metadata: Metadata):
+        contents = json.dumps(asdict(metadata), ensure_ascii=False)
+        path = self.catalog_dir / f"{metadata.id}.json"
+        path.write_text(contents, encoding="utf-8")
 
-    def __exists_id(self, id: str) -> bool:
-        """Checks if a book exists within the library catalog."""
-        for book in self.books:
-            if book.id == id:
-                return True
-        return False
+    def exists(self, id: str):
+        if len(id) == 13:
+            # is isbn
+            id = [
+                meta for meta in self if meta.type == "book" and meta.data.isbn == id
+            ][0]
+        path = self.catalog_dir / f"{id}.json"
+        return path.exists()
 
-    def add(self, book: Book, cover_image: str):
-        """Adds the given book to the library catalog."""
-        if self.__exists_id(book.id):
-            raise ValueError(f"book {book.id} already exists")
-        self.books.append(book)
+    def add(self, metadata: Metadata, cover_image: str):
+        """Adds the given metadata to the library catalog."""
+        if self.__contains__(metadata.id):
+            raise ValueError(f"metadata {metadata.id} already exists")
+        self.save(metadata)
         if cover_image:
-            self.cover_image_manager.add(book.id, cover_image)
-        self.save()
+            self.cover_image_manager.add(metadata.id, cover_image)
 
     def remove(self, id: str):
-        """Removes the given book from the library catalog."""
-        if not self.__exists_id(id):
-            raise LookupError(f"the book {id} doesn't exist")
-        for book in self.books:
-            if book.id == id:
-                self.books.remove(book)
-                self.cover_image_manager.remove(id)
-                break
-        self.save()
+        """Removes metadata associated with the given id from the library catalog."""
+        if not self.__contains__(id):
+            raise KeyError(f"the metadata with id {id} does not exist")
+        path = self.catalog_dir / f"{id}.json"
+        send2trash(path)
+        self.cover_image_manager.remove(id)
 
-    def edit(self, edited_book: Book):
-        for i, book in enumerate(self.books):
-            if book.id == edited_book.id:
-                self.books[i] = edited_book
-                break
-        self.save()
+    def edit(self, metadata: Metadata, cover_image: bytes):
+        self.save(metadata)
+        self.cover_image_manager.remove(metadata.id)
+        self.cover_image_manager.add(metadata.id, cover_image)
 
-    def get(self, id: str) -> tuple:
-        for book in self.books:
-            if book.id == id:
-                cover_image = self.cover_image_manager.get(id)
-                return (book, cover_image)
-        raise LookupError(f"book {id} doesn't exist")
+    def get(self, id: str) -> Metadata:
+        path = self.catalog_dir / f"{id}.json"
+        try:
+            contents = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            raise LookupError(f"book {id} doesn't exist")
 
-    def exists(self, isbn: str) -> bool:
-        for book in self.books:
-            if book.isbn == isbn and isbn != "0" * 13:
-                return True
-        return False
+        metadata = from_dict(Metadata, json.loads(contents))
+        cover_image = self.cover_image_manager.get(id)
+        return (metadata, cover_image)
+    
+
+    def glob_over_dir(self) -> list[Path]:
+        return list(self.catalog_dir.glob("*.json"))
+
+    def get_num_books(self) -> int:
+        files = self.glob_over_dir()
+        return len(files)
+    
+    def __iter__(self):
+        self.iter_paths = self.glob_over_dir()
+        return self
+    
+    def __next__(self):
+        if self.iter_paths:
+            id = self.iter_paths[0].name[:-5]
+            del self.iter_paths[0]
+            return self.get(id)
+        else:
+            raise StopIteration
+
+    def __len__(self):
+        return self.get_num_books()
+
+    def __contains__(self, id: str):
+        self.exists(id)
+
+    def __getitem__(self, id: str) -> Metadata:
+        return self.get(id)
+
+    def __delitem__(self, id: str):
+        self.remove(id)

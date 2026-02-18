@@ -1,0 +1,12 @@
+__pycache__/
+hooks/__pycache__
+build/
+executables/
+installer/
+legal/
+librarian/
+deps/
+pkgroot/
+UninstallScripts/
+file_version_info.txt
+librarian.spec

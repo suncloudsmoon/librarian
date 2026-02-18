@@ -10,7 +10,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "bookshelf_manager.app",
-            "cwd": "${workspaceFolder}/src"
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

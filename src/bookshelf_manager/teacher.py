@@ -42,6 +42,7 @@ from pydantic import BaseModel, Field
 
 from .catalog_manager import Book
 from .librarian import Librarian
+from .utils import ask_image
 
 
 class Question(BaseModel):
@@ -84,7 +85,7 @@ class Teacher:
 
     def __init__(self, librarian: Librarian, chat_client: OpenAI, model_name: str):
         self.librarian = librarian
-        self.chat_client = chat_client
+        self.client = chat_client
         self.model_name = model_name
         self.system_prompt = (
             "Your job is to extract questions and answers from a page selected from a textbook for preparing an exam for a college student. "
@@ -185,7 +186,7 @@ class Teacher:
                 page_count = page_count + 1
 
                 for question_info in section.questions:
-                    filepath = self.librarian.get_book_path(question_info.book)
+                    filepath = self.librarian.get_document_path(question_info.book)
                     page_index = question_info.page - 1
                     with fitz.open(filepath) as file:
                         exam_file.insert_pdf(
@@ -332,7 +333,7 @@ class Teacher:
         return exam
 
     def generate_questions(self, book: Book) -> list[QuestionInfo]:
-        filepath = self.librarian.get_book_path(book)
+        filepath = self.librarian.get_document_path(book)
         questions = []
         doc = pymupdf.open(filepath)
         page_indicies = [random.randint(0, len(doc) - 1) for i in range(5)]
@@ -340,7 +341,7 @@ class Teacher:
             pix = doc[index].get_pixmap()
             bytes = pix.tobytes(output="jpeg")
             image_data = base64.urlsafe_b64encode(bytes).decode()
-            question = self.ask(image_data)
+            question = ask_image(self.client, self.model_name, Question, image_data)
             if question.content and (
                 question.choice_a
                 or question.choice_b
@@ -349,26 +350,3 @@ class Teacher:
             ):
                 questions.append(QuestionInfo(question, book, index + 1))
         return questions
-
-    def ask(self, image_data: str) -> Question:
-        completion = self.chat_client.chat.completions.parse(
-            model=self.model_name,
-            messages=[
-                {"role": "system", "content": self.system_prompt},
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{image_data}"
-                            },
-                        }
-                    ],
-                },
-            ],
-            response_format=Question,
-            max_completion_tokens=1000,
-        )
-        message = completion.choices[0].message
-        return message.parsed

@@ -3,37 +3,42 @@ Defines a class called Librarian that is designed to mimic a real librarian's jo
 It also defines a dataclass called Config that stores all configuration settings necessary for the librarian.
 """
 
+from io import BytesIO
 import json
 import os
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
 from shutil import move
+from typing import Literal
 
 from dacite import from_dict
+import fitz
 from prompt_toolkit import HTML
 from prompt_toolkit import print_formatted_text as print
 from send2trash import send2trash
 
-from .catalog_manager import Book, CatalogManager
+from .catalog_manager import Book, CatalogManager, Metadata
 from .search_manager import SearchManager
 from .sync import SyncClient, SyncServer
 from .utils import Git, create_classification_cls, get_resource_path
+from llama_index.llms.openai_like import OpenAILike
 
 
 @dataclass
 class Config:
     """Defines settings that the user can change if needed."""
 
+    enable_enhanced_ocr: bool = True
     enable_version_history: bool = True
     classification_system: str = "dewey"
-    exclude_thinking_tag: bool = True  # deprecated
+    # exclude_thinking_tag: bool = True  # deprecated
     system_prompt: str = (
         "You are a concise librarian assistant. Use the supplied search-results input to answer the user's query and draw on those documents as evidence. Never mention internal databases, tools, or memory — present findings as if you just retrieved them. When citing, include only source metadata (title, authors, page, id, call_number) inline. Keep answers short, factual, and helpful."
     )
-    chat_model: str = "qwen3-0.6b-gpu"  # deprecated
+    # chat_model: str = "qwen3-0.6b-gpu"  # deprecated
     embed_model: str = (
-        get_resource_path("models/sentence-transformers/all-minilm-l6-v2")
+        str(get_resource_path("models/sentence-transformers/all-minilm-l6-v2"))
         if Path("models/sentence-transformers/all-minilm-l6-v2").exists()
         else "sentence-transformers/all-minilm-l6-v2"
     )
@@ -43,7 +48,7 @@ class Config:
 
 @dataclass
 class LibrarianNotes:
-    changes_since_last_version: int = 0
+    changes: int = 0
 
 
 def load_from_file(cls, path, default_config):
@@ -65,11 +70,21 @@ def save_to_file(path, config):
 class Librarian:
     """Defines a librarian with attributes and methods not too different from a real librarian."""
 
-    def __init__(self, librarian_path, default_config: Config):
+    def __init__(
+        self,
+        librarian_path,
+        default_config: Config,
+        ocr_client: OpenAILike,
+        general_client: OpenAILike,
+    ):
         """Initializes necessary attributes such as config, catalog manager, search manager, etc."""
+
+        self.ocr_client = ocr_client
+        self.general_client = general_client
+
         self.librarian_path = Path(librarian_path)
         self.config_path = self.librarian_path / "config.json"
-        self.notes_path = self.librarian_path / "librarian_notes.json"
+        self.notes_path = self.librarian_path / "notes.json"
 
         self.config = load_from_file(Config, self.config_path, default_config)
 
@@ -77,9 +92,11 @@ class Librarian:
         self.search_manager = SearchManager(
             path=self.librarian_path,
             embed_path=self.config.embed_model,
-            chat_model=self.config.chat_model,
+            general_llm=self.general_client,
+            ocr_llm=self.ocr_client,
             system_prompt=self.config.system_prompt,
             catalog_manager=self.catalog_manager,
+            enable_enhanced_ocr=self.config.enable_enhanced_ocr,
         )
 
         type = self.config.classification_system
@@ -92,48 +109,56 @@ class Librarian:
             self.notes_path,
             LibrarianNotes(),
         )
-        if (
-            self.config.enable_version_history
-            and self.librarian_notes.changes_since_last_version >= 5
-        ):
+        if self.config.enable_version_history and self.librarian_notes.changes >= 5:
             # Do backup
-            git = Git(self.librarian_path.parent)
-            git.commit(date.today().isoformat())
-            self.librarian_notes.changes_since_last_version = 0
-            save_to_file(self.notes_path, self.librarian_notes)  # autosave
+            self.do_git_commit()
 
     def close(self):
         """Closes resources held by search manager."""
-        self.search_manager.close()
+        self.search_manager.save()
 
     def is_database_mismatch(self) -> bool:
         return self.search_manager.is_database_mismatch(
-            lambda book: book.id in self.config.index_denylist
+            lambda metadata: metadata.id in self.config.index_denylist
         )
 
-    def info(self, id: str) -> tuple:
-        """Returns a Book object identified by id."""
-        return self.catalog_manager.get(id)
+    def do_git_commit(self):
+        git = Git(self.librarian_path.parent, self.librarian_path / ".git")
+        git.stage(exclude_paths=[self.librarian_path / p for p in ("stores")])
+        git.commit(date.today().isoformat())
+        self.librarian_notes.changes = 0
+        save_to_file(self.notes_path, self.librarian_notes)  # autosave
 
-    def exists(self, isbn: str) -> bool:
-        return self.catalog_manager.exists(isbn)
+    def get_cover_image(self, path: Path):
+        if path.suffix.lower().endswith("pdf"):
+            pdf = fitz.open(path)
+            page = pdf.load_page(0)
+            pixels = page.get_pixmap(dpi=300)
+            buffer = BytesIO(pixels.tobytes(output="jpeg"))
+            cover_image = buffer.getvalue()
+        else:
+            cover_image = None
+        return cover_image
 
-    def add(self, path: Path, book: Book, cover_image: str):
+    def add(self, path: Path, book: Book):
         """Adds the given book located in path to the library."""
 
         if not path.exists():
             raise ValueError(f"{path} doesn't exist")
 
         # Count as a change
-        self.librarian_notes.changes_since_last_version += 1
+        self.librarian_notes.changes += 1
         save_to_file(self.notes_path, self.librarian_notes)  # autosave
+
+        # Get cover image from PDF
+        cover_image = self.get_cover_image(path)
 
         # Add to catalog manager
         self.catalog_manager.add(book, cover_image)
 
         try:
-            # add to search manager
-            self.search_manager.add(path, book.id)
+            # Add to search manager
+            self.search_manager.add(path=path, id=id)
         except ValueError:
             self.config.index_denylist.append(book.id)
             save_to_file(self.config_path, self.config)  # autosave
@@ -142,14 +167,14 @@ class Librarian:
             self.search_manager.index()
         finally:
             # path stuff
-            book_path = self.get_book_path(book)
+            book_path = self.get_document_path(book)
             os.makedirs(book_path.parent, exist_ok=True)
             move(path, book_path)
 
-    def remove(self, id):
+    def remove(self, id: str):
         """Removes the book specified by id from librarian."""
         # Count as a change
-        self.librarian_notes.changes_since_last_version += 1
+        self.librarian_notes.changes += 1
         save_to_file(self.notes_path, self.librarian_notes)  # autosave
 
         self.delete_book(id)
@@ -159,14 +184,14 @@ class Librarian:
             self.config.index_denylist.remove(id)
             save_to_file(self.config_path, self.config)  # autosave
 
-    def edit(self, book: Book):
+    def edit(self, modified_metadata: Metadata):
         # Count as a change
-        self.librarian_notes.changes_since_last_version += 1
+        self.librarian_notes.changes += 1
         save_to_file(self.notes_path, self.librarian_notes)  # autosave
 
-        old_book = self.info(book.id)[0]
-        old_path = self.get_book_path(old_book)
-        new_path = self.get_book_path(book)
+        old_file = self.info(modified_metadata.id)[0]
+        old_path = self.get_document_path(old_file)
+        new_path = self.get_document_path(modified_metadata)
 
         os.makedirs(new_path.parent, exist_ok=True)
         move(old_path, new_path)
@@ -174,7 +199,11 @@ class Librarian:
             os.removedirs(old_path.parent)
         except OSError:
             pass
-        self.catalog_manager.edit(book)
+
+        # Get cover image from PDF
+        cover_image = self.get_cover_image(new_path)
+
+        self.catalog_manager.edit(modified_metadata, cover_image)
 
     def refresh(self):
         """Refreshes the vector database component. Necessary if the embed model is changed, for instance."""
@@ -184,7 +213,12 @@ class Librarian:
         for path, id in paths_ids:
             try:
                 print(f"Indexing '{path}'")
-                self.search_manager.add(path, id)
+                self.search_manager.add(
+                    path=path,
+                    id=id,
+                    enable_enhanced_ocr=self.config.enable_enhanced_ocr,
+                    ocr_client=self.client,
+                )
             except ValueError as err:
                 print(HTML(f"<ansired>Indexing failure: {err}</ansired>"))
                 self.config.index_denylist.append(id)
@@ -193,14 +227,19 @@ class Librarian:
 
     def get_paths_ids(self) -> list[tuple]:
         return [
-            (self.get_book_path(book), book.id)
-            for book in self.catalog_manager.books
+            (self.get_document_path(book), book.id)
+            for book in self.catalog_manager
             if book.id not in self.config.index_denylist
         ]
 
-    def search(self, query: str):
+    def search(self, query: str, search_type: Literal["semantic", "fts"] = "semantic"):
         """Performs a semantic search based on the query by forwarding the request to the search manager."""
-        results = self.search_manager.search_query(query)
+        if search_type == "semantic":
+            results = self.search_manager.semantic_search(query)
+        elif search_type == "fts":
+            results = self.search_manager.fts_search(query)
+        else:
+            raise NotImplementedError(f"unknown search_type {search_type}")
         return results
 
     def question(self, query: str):
@@ -224,20 +263,35 @@ class Librarian:
             )
             server.start(home_dir)
 
-    def get_book_path(self, book: Book) -> Path:
+    def get_document_path(self, metadata: Metadata) -> Path:
         return Path(
             os.path.join(
                 self.librarian_path.parent,
-                self.classification_system.get_path(book.call_number),
-                book.filename,
+                self.classification_system.get_path(metadata.call_number),
+                metadata.filename,
             )
         )
 
-    def delete_book(self, id):
-        book = self.info(id)[0]
-        book_path = self.get_book_path(book)
-        send2trash(book_path)
+    def delete_book(self, id: str):
+        document = self.info(id)[0]
+        doc_path = self.get_document_path(document)
+        send2trash(doc_path)
         try:
-            os.removedirs(book_path.parent)
+            os.removedirs(doc_path.parent)
         except OSError:
             pass
+
+    def info(self, id: str) -> tuple:
+        """Returns a Book object identified by id."""
+        return self.catalog_manager[id]
+
+    def exists(self, id: str) -> bool:
+        """Returns whether or not the material identified by id exists in the catalog manager."""
+        return id in self.catalog_manager
+
+    def __getitem__(self, id: str) -> tuple:
+        """Returns a Book object identified by id."""
+        return self.info(id)
+
+    def __contains__(self, id: str):
+        self.exists(id)

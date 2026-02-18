@@ -2,13 +2,26 @@
 
 import json
 import os
-from dataclasses import asdict, dataclass, field
 import subprocess
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from dacite import from_dict
+from llama_index.core.llms import ChatMessage, ImageBlock, TextBlock
+from llama_index.llms.openai_like import OpenAILike
 
-defined_classifications = ["dewey", "lcc"]
+defined_classifications = ["dewey", "lcc", "udc"]
+
+
+def ask_image(llm: OpenAILike, system_prompt: str, response_format, image_data: str):
+    messages = [
+        ChatMessage(role="system", content=system_prompt),
+        ChatMessage(
+            role="user", blocks=[ImageBlock(url=f"data:image/jpeg;base64,{image_data}")]
+        ),
+    ]
+    response = llm.as_structured_llm(response_format).chat(messages)
+    return response.raw
 
 
 @dataclass
@@ -103,35 +116,57 @@ class LCCClassificationSystem(ClassificationSystem):
         raise LookupError(f"could not find {call_number}")
 
 
+class UDCClassificationSystem(ClassificationSystem):
+
+    def __init__(self, text: str):
+        super().__init__("udc")
+        self.loads(text)
+
+    def get_path(
+        self, call_number: str, data_list: list[Category] = None, depth: int = 0
+    ) -> str:
+        raise NotImplementedError("udc not implemented yet")
+
+
 def create_classification_cls(type: str, text: str):
     systems = {"dewey": DeweyClassificationSystem, "lcc": LCCClassificationSystem}
     return systems[type](text)
 
 
-def get_resource_path(path):
-    app_dir = os.path.abspath(os.path.dirname(__file__))
-    return os.path.join(app_dir, path)
+def get_resource_path(path: Path) -> Path:
+    app_dir = Path(os.path.dirname(__file__)).absolute()
+    return app_dir.parent.parent / path
 
 
 class Git:
 
-    def __init__(self, work_dir: Path):
+    def __init__(self, work_dir: Path, git_folder: Path):
         self.work_dir = work_dir
-        git_folder = work_dir / ".git"
-        if not git_folder.exists():
+        self.git_folder = git_folder
+        if not self.git_folder.exists():
             self.initialize()
 
     def initialize(self):
-        subprocess.call(args=[
-            "git", "-C", self.work_dir, "init", 
-        ], stdout=open(os.devnull, "wb"))
-    
-    def stage(self):
-        subprocess.call(args=[
-            "git", "-C", self.work_dir, "add", "."
-        ], stdout=open(os.devnull, "wb"))
+        subprocess.call(
+            args=[
+                "git",
+                "-C",
+                self.work_dir.absolute(),
+                "--git-dir",
+                self.git_folder.absolute(),
+                "init",
+            ],
+            stdout=open(os.devnull, "wb"),
+        )
+
+    def stage(self, exclude_paths: list | None = None):
+        args = ["git", "-C", self.work_dir.absolute(), "add", "--", "."] + [
+            f":!{path}" for path in exclude_paths
+        ]
+        subprocess.call(args=args, stdout=open(os.devnull, "wb"))
 
     def commit(self, message: str):
-        subprocess.call(args=[
-            "git", "-C", self.work_dir, "commit", "-m", message
-        ], stdout=open(os.devnull, "wb"))
+        subprocess.call(
+            args=["git", "-C", self.work_dir.absolute(), "commit", "-m", message],
+            stdout=open(os.devnull, "wb"),
+        )

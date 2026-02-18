@@ -2,6 +2,10 @@
 Librarian is a Library Management Software (LMS) designed exclusively for use in the command-line. It has many great features, such as chatting with a LLM using semantic search results. The software currently supports addition, removal, and editing of book entires in the book catalog, a file that keeps track of all the items in the library. The library's folder structure follows the Dewey Decimal System (DDS), which makes it much more familiar and easy to access library items. Moving on, the main purpose of this LMS system is to enable the centralization of knowledge through the use of the library catalog and to ease the process of researching and accessing knowledge through the feature of semantic search.
 Semantic search enables users to find relevant books based on natural language queries. This allows users to find books much easier than using index-based search which only returns relevant results based on text matching. This LMS is designed primarily to exploit the advantages of semantic search and use its potential in making knowledge more accessible.
 
+## Prerequisities
+- [Git Version Control](https://git-scm.com/install/)
+- [LLM Hosting Provider (i.e. LM Studio)](https://lmstudio.ai/download)
+
 ## How to Install
 ```
 pip install bookshelf-manager
