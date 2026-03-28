@@ -52,7 +52,7 @@ mypy_extensions==1.1.0
 networkx==3.6.1
 numpy==2.4.1
 openai==2.15.0
-orjson==3.11.5
+orjson==3.11.6
 packaging==25.0
 pikepdf==10.2.0
 pillow==12.1.0
