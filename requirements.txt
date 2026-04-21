@@ -40,7 +40,7 @@ langchain-core==1.2.7
 langchain-huggingface==1.2.0
 langchain-text-splitters==1.1.0
 langsmith==0.6.4
-lxml==6.0.2
+lxml==6.1.0
 Markdown==3.10.1
 MarkupSafe==3.0.3
 marshmallow==3.26.2
