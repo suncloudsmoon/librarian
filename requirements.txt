@@ -69,7 +69,7 @@ PyMuPDF==1.26.7
 pypandoc==1.16.2
 pyproject_hooks==1.2.0
 python-dateutil==2.9.0.post0
-python-dotenv==1.2.1
+python-dotenv==1.2.2
 PyYAML==6.0.3
 regex==2026.1.15
 requests==2.32.5
