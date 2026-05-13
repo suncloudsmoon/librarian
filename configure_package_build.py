@@ -21,10 +21,13 @@ core_dependencies = [
     "pikepdf",
     "PyYAML",
     "pypandoc",
-    "langchain-huggingface",
-    "langchain-community",
+    "llama-index",
+    "llama-index-vector-stores-lancedb",
+    "llama-index-llms-openai-like",
+    "llama-index-embeddings-huggingface",
     "foundry-local-sdk",
-    "sentence-transformers"
+    "sentence-transformers",
+    "pix2text",
 ]
 os_specific = {
     "windows": ["pywin32"]

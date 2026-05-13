@@ -20,17 +20,11 @@ from pathlib import Path
 from shutil import rmtree
 from textwrap import dedent
 
-import kuzu
+os.environ["RUST_LOG"] = "error"
+
 import pymupdf
-from llama_index.core import PropertyGraphIndex, StorageContext, load_index_from_storage
+from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage
 from llama_index.core.agent.workflow import FunctionAgent
-from llama_index.core.graph_stores import SimplePropertyGraphStore
-from llama_index.core.graph_stores.types import KG_RELATIONS_KEY
-from llama_index.core.indices.property_graph import (
-    LLMSynonymRetriever,
-    SimpleLLMPathExtractor,
-    VectorContextRetriever,
-)
 from llama_index.core.memory import FactExtractionMemoryBlock, Memory, VectorMemoryBlock
 from llama_index.core.schema import TextNode
 from llama_index.core.vector_stores import (
@@ -39,7 +33,6 @@ from llama_index.core.vector_stores import (
     MetadataFilters,
 )
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.graph_stores.kuzu import KuzuPropertyGraphStore
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.vector_stores.lancedb import LanceDBVectorStore
 from pydantic import BaseModel, Field
@@ -48,17 +41,13 @@ from semchunk import chunkerify
 from .catalog_manager import Book, CatalogManager, Metadata
 from .utils import ask_image
 from llama_index.core import Settings
-
-
-class OCRResult(BaseModel):
-    text: str
-    refused: bool = Field(description="If the image shown represents a cover of a book, table of contents, references, or index, set refused to True. Otherwise, set refused to False.")
+from pix2text import Pix2Text
 
 
 @dataclass
 class SearchResult:
     metadata: Metadata
-    cover_image: bytes
+    cover_image: str
     page: int
     page_content: str
 
@@ -70,7 +59,6 @@ class SearchManager:
         path: Path,
         embed_path: str,
         general_llm: OpenAILike,
-        ocr_llm: OpenAILike,
         system_prompt: str,
         catalog_manager: CatalogManager,
         enable_enhanced_ocr: bool,
@@ -80,19 +68,19 @@ class SearchManager:
 
         self.embed_path = embed_path
         self.catalog_manager = catalog_manager
-        Settings.llm = self.general_llm = general_llm
-        self.ocr_llm = ocr_llm
         self.enable_enhanced_ocr = enable_enhanced_ocr
 
+        Settings.llm = self.general_llm = general_llm
+
         self.create_embed_client()
-
-        self.get_len_tokens = lambda text: len(
-            Settings.embed_model._client.tokenizer.tokenize(text)
-        )
-
+        
         self.stores_path = path / "stores"
         self.llamaindex_dir = self.stores_path / "llamaindex"
         self.create_stores(self.stores_path)
+
+        self.get_len_tokens = lambda text: len(
+            Settings.embed_model._model.tokenizer.tokenize(text)
+        )
 
         # memory stuff
         blocks = [
@@ -118,54 +106,36 @@ class SearchManager:
         )
 
         self.chat_agent = FunctionAgent(
-            tools=[self.search_entity_relations, self.search_for_books],
+            tools=[self.search_for_books],
             llm=self.general_llm,
             system_prompt=system_prompt,
-        )
-        self.extractor = SimpleLLMPathExtractor(llm=self.general_llm)
-        self.graph_retriever = self.llamaindex.as_retriever(
-            sub_retrievers=[
-                VectorContextRetriever(
-                    graph_store=self.llamaindex.property_graph_store,
-                    embed_model=Settings.embed_model,
-                ),
-                LLMSynonymRetriever(
-                    graph_store=self.llamaindex.property_graph_store,
-                    llm=self.general_llm,
-                ),
-            ]
         )
 
     def create_stores(self, stores_dir: Path):
         stores_dir.mkdir(exist_ok=True)
-        vector_store = LanceDBVectorStore(
+        self.vector_store = LanceDBVectorStore(
             uri=str(stores_dir / "vectordb"), table_name="documents"
         )
-        self.graphdb = kuzu.Database(stores_dir / "graphdb")
-        self.graph_store = KuzuPropertyGraphStore(db=self.graphdb)
 
         if self.llamaindex_dir.exists():
             storage_context = StorageContext.from_defaults(
                 persist_dir=str(self.llamaindex_dir),
-                vector_store=vector_store,
-                property_graph_store=self.graph_store,
+                vector_store=self.vector_store,
             )
             self.llamaindex = load_index_from_storage(storage_context=storage_context)
         else:
             self.llamaindex_dir.mkdir()
-            property_graph_store = SimplePropertyGraphStore()
             storage_context = StorageContext.from_defaults(
-                vector_store=vector_store,
-                property_graph_store=self.graph_store,
+                vector_store=self.vector_store,
             )
 
-            self.llamaindex = PropertyGraphIndex.from_documents(
+            self.llamaindex = VectorStoreIndex.from_documents(
                 documents=[],
                 storage_context=storage_context,
-                property_graph_store=property_graph_store,
+                vector_store=self.vector_store,
             )
             self.save()
-        self.db = vector_store.client
+        self.db = self.vector_store.client
 
     def create_embed_client(self):
         with contextlib.redirect_stdout(None):
@@ -223,21 +193,14 @@ class SearchManager:
         )
 
         pdf = pymupdf.open(path)
+        if self.enable_enhanced_ocr:
+            p2t = Pix2Text.from_config()
+        
         nodes = []
         for num, page in enumerate(pdf, start=1):
             if self.enable_enhanced_ocr:
-                image_bytes = page.get_pixmap().tobytes(output="jpg")
-                image_data = base64.urlsafe_b64encode(image_bytes).decode()
-                system_prompt = "Extract all text shown in the text except for page numbers, figure numbers, and figure captions. Represent any math expressions using the LaTeX notation. If the image shown represents a cover of a book, table of contents, references, or index, set refused to True. Otherwise, set refused to False."
-                
-                # switch to plain text output and a tool call to refuse it?
-                ocr_result: OCRResult = ask_image(
-                    self.ocr_llm, system_prompt, OCRResult, image_data
-                )
-                if not ocr_result.refused:
-                    text = ocr_result.text.replace("\\n", "\n").replace("\'", "'").replace('\"', '"')
-                else:
-                    continue
+                doc = p2t.recognize_pdf(path, page_numbers=[page])
+                text = doc.to_markdown("output-md")
             else:
                 text = page.get_text()
 
@@ -248,7 +211,7 @@ class SearchManager:
             for chunk in chunks:
                 nodes.append(TextNode(text=chunk, metadata={"id": id, "page": num}))
         if nodes:
-            self.llamaindex.insert_nodes(nodes, kg_extractors=[self.extractor])
+            self.llamaindex.insert_nodes(nodes)
             self.save()
         else:
             raise RuntimeError(f"could not extract text from '{path}'")
@@ -258,31 +221,12 @@ class SearchManager:
         self.llamaindex.delete_nodes(filters=filters)
         self.save()
 
-    def search_entity_relations(self, query: str) -> str:
-        """
-        Search the knowledge graph and return the plaintext triples
-        in the form: source -[relation]-> target
-
-        Always try to use this function before calling search_for_books.
-        If the information returned from this function is not relevant based on the user's query,
-        ignore this function's output entirely.
-        """
-        rels = [
-            rel
-            for r in self.graph_retriever.retrieve(query)
-            for rel in r.node.metadata.get(KG_RELATIONS_KEY, [])
-        ]
-        return (
-            "\n".join(f"{x.source_id} -[{x.label}]-> {x.target_id}" for x in rels[:50])
-            or "No results found"
-        )
-
     def search_for_books(self, query: str) -> str:
         """
         Searches a vector database full of books for relevant text chunks based on the query.
         The result contains the book's metadata, text chunk, and the page number.
         """
-        results = self.graph_retriever.retrieve(query)
+        results = self.llamaindex.as_retriever().retrieve(query)
         top_results = [result for result in results if result.score > 0.1]
         search_results = self.get_search_results(type="nodes", results=top_results)
 
@@ -332,11 +276,11 @@ class SearchManager:
             else:
                 raise NotImplementedError(f"unknown type {type}")
 
-            metadata, cover_image = self.catalog_manager.get(id)
+            metadata, cover_image_path = self.catalog_manager.get(id)
             search_results.append(
                 SearchResult(
                     metadata=metadata,
-                    cover_image=cover_image,
+                    cover_image=str(cover_image_path),
                     page=page,
                     page_content=text,
                 )

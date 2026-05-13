@@ -39,7 +39,6 @@ class AppConfig:
     base_url: str
     api_key: str
     general_model: str
-    ocr_model: str
 
 
 class CmdApp:
@@ -60,18 +59,9 @@ class CmdApp:
             base_url = prompt("Base URL: ", default="http://localhost:1234/v1")
             api_key = prompt("API Key: ", default="dummy_key")
             general_model = prompt("VLM Model (general tasks): ")
-            ocr_model = prompt("VLM Model (for OCR): ")
-            self.app_config = AppConfig(base_url, api_key, general_model, ocr_model)
+            self.app_config = AppConfig(base_url, api_key, general_model)
             self.save_config()
 
-        self.ocr_client = OpenAILike(
-            api_base=self.app_config.base_url,
-            api_key=self.app_config.api_key,
-            model=self.app_config.ocr_model,
-            is_function_calling_model=True,
-            should_use_structured_outputs=True,
-            is_chat_model=True,
-        )
         self.general_client = OpenAILike(
             api_base=self.app_config.base_url,
             api_key=self.app_config.api_key,
@@ -80,6 +70,7 @@ class CmdApp:
             should_use_structured_outputs=True,
             is_chat_model=True,
             max_tokens=2048,
+            timeout=180
         )
 
     def save_config(self):
@@ -145,7 +136,6 @@ class CmdApp:
         self.librarian = Librarian(
             librarian_path=librarian_path,
             default_config=default_config,
-            ocr_client=self.ocr_client,
             general_client=self.general_client,
         )
         register(self.close)
@@ -155,7 +145,7 @@ class CmdApp:
             self.do_chore()
             self.db_refresh_check()
         except Exception as err:
-            raise
+            # raise
             print(HTML(f"<ansired>{err}</ansired>"))
             os._exit(1)
 
@@ -403,7 +393,7 @@ class CmdApp:
                 search_results = self.librarian.search(query)
                 self.print_results(search_results)
             except Exception as err:
-                raise
+                # raise
                 print(HTML(f"<ansired>Error: {err}</ansired>"))
             finally:
                 self.close()
@@ -463,6 +453,7 @@ class CmdApp:
                 filename="",
                 data=default_data,
             )
+            error_msg = lambda msg: HTML(f"<ansired>{msg}</ansired>")
 
             while True:
                 call_number = prompt("Call Number: ", default=metadata.call_number).strip()
@@ -471,7 +462,6 @@ class CmdApp:
                 print(error_msg("Call number needs to be specified, try again."))
 
             book = deepcopy(metadata.data)
-            error_msg = lambda msg: HTML(f"<ansired>{msg}</ansired>")
             while True:
                 isbn = re.sub(r"[^0-9]", "", prompt("ISBN: ", default=book.isbn))
                 zero_isbn = "0" * 13
@@ -558,14 +548,15 @@ class CmdApp:
                 end="\n\n",
             )
 
-            data = result.metadata.data
+            metadata = result.metadata
+            data = metadata.data
             if (mtype := result.metadata.type) == "book":
                 book = data
                 metadata = {
                     "title": book.title,
                     "authors": str(book.authors)[1:-1].replace("'", ""),
-                    "call_number": book.call_number,
-                    "page": book.page,
+                    "call_number": metadata.call_number,
+                    "page": result.page,
                 }
             else:
                 raise NotImplementedError(f"unknown metadata type {mtype}")

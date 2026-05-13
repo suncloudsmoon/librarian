@@ -82,9 +82,9 @@ class CoverImageManager:
         if path.exists():
             send2trash(path)
 
-    def get(self, id: str) -> bytes | None:
+    def get(self, id: str) -> Path | None:
         path = self.get_path(id)
-        return path.read_bytes() if path.exists() else None
+        return path.absolute() if path.exists() else None
 
 
 class CatalogManager:
@@ -104,7 +104,7 @@ class CatalogManager:
         if len(id) == 13:
             # is isbn
             id = [
-                meta for meta in self if meta.type == "book" and meta.data.isbn == id
+                meta for meta, cover_path in self if meta.type == "book" and meta.data and meta.data.isbn == id
             ][0]
         path = self.catalog_dir / f"{id}.json"
         return path.exists()
@@ -130,7 +130,7 @@ class CatalogManager:
         self.cover_image_manager.remove(metadata.id)
         self.cover_image_manager.add(metadata.id, cover_image)
 
-    def get(self, id: str) -> Metadata:
+    def get(self, id: str) -> tuple:
         path = self.catalog_dir / f"{id}.json"
         try:
             contents = path.read_text(encoding="utf-8")
@@ -165,7 +165,7 @@ class CatalogManager:
         return self.get_num_books()
 
     def __contains__(self, id: str):
-        self.exists(id)
+        return self.exists(id)
 
     def __getitem__(self, id: str) -> Metadata:
         return self.get(id)

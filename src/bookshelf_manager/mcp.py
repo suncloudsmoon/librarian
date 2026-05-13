@@ -1,21 +1,26 @@
+from pathlib import Path
+
 from .librarian import Config, Librarian
 from mcp.server.fastmcp import FastMCP
-from llama_index.llms.openai import OpenAI
-
+from llama_index.llms.openai_like import OpenAILike
 
 def start_mcp_server(
     host: str,
     port: int,
     librarian_path,
     default_config: Config,
-    ocr_client: OpenAI,
-    general_client: OpenAI,
+    general_client: OpenAILike,
 ):
+    def get_library_path() -> str:
+        """
+        Returns the absolute path to the library in the filesystem.
+        """
+        return str(Path(librarian_path).absolute())
+    
     mcp = FastMCP(host=host, port=port)
     librarian = Librarian(
         librarian_path=librarian_path,
         default_config=default_config,
-        ocr_client=ocr_client,
         general_client=general_client,
     )
 
@@ -24,9 +29,17 @@ def start_mcp_server(
         librarian.remove,
         librarian.edit,
         librarian.refresh,
+        librarian.is_database_mismatch,
         librarian.search,
         librarian.exists,
+        librarian.sync,
+        librarian.get_doc_path_by_id,
+        librarian.info
     ):
         mcp.tool()(fn)
-    for fn in (librarian.info):
-        mcp.resource(uri=f"librarian://{fn.__name__}")(fn)
+
+    mcp.resource(uri="librarian://doc/{id}")(librarian.get_doc_path_by_id)
+    mcp.resource(uri="librarian://get_all_documents")(librarian.get_all_documents)
+    mcp.resource(uri="librarian://get_library_path")(get_library_path)
+
+    mcp.run(transport="streamable-http")

@@ -1,4 +1,5 @@
 import sys
+import os
 from pathlib import Path
 
 from .utils import get_resource_path
@@ -70,6 +71,7 @@ def main():
     if process_args():
         sys.exit()
     else:
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
         from .cmd_app import CmdApp
 
         app = CmdApp()

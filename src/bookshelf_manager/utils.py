@@ -135,7 +135,7 @@ def create_classification_cls(type: str, text: str):
 
 def get_resource_path(path: Path) -> Path:
     app_dir = Path(os.path.dirname(__file__)).absolute()
-    return app_dir.parent.parent / path
+    return app_dir / path
 
 
 class Git:

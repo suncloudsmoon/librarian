@@ -312,7 +312,7 @@ class Teacher:
     ) -> list[ExamSection]:
         books = [
             book
-            for book in self.librarian.catalog_manager.books
+            for book, cover_image in self.librarian.catalog_manager
             if book.filename.lower().endswith(".pdf")
         ]
         if len(books) < num_book_selections:

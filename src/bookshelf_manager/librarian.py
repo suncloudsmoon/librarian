@@ -18,7 +18,7 @@ from prompt_toolkit import HTML
 from prompt_toolkit import print_formatted_text as print
 from send2trash import send2trash
 
-from .catalog_manager import Book, CatalogManager, Metadata
+from .catalog_manager import CatalogManager, Metadata
 from .search_manager import SearchManager
 from .sync import SyncClient, SyncServer
 from .utils import Git, create_classification_cls, get_resource_path
@@ -29,19 +29,13 @@ from llama_index.llms.openai_like import OpenAILike
 class Config:
     """Defines settings that the user can change if needed."""
 
-    enable_enhanced_ocr: bool = True
-    enable_version_history: bool = True
+    enable_enhanced_ocr: bool = False
+    enable_version_history: bool = False
     classification_system: str = "dewey"
-    # exclude_thinking_tag: bool = True  # deprecated
     system_prompt: str = (
         "You are a concise librarian assistant. Use the supplied search-results input to answer the user's query and draw on those documents as evidence. Never mention internal databases, tools, or memory — present findings as if you just retrieved them. When citing, include only source metadata (title, authors, page, id, call_number) inline. Keep answers short, factual, and helpful."
     )
-    # chat_model: str = "qwen3-0.6b-gpu"  # deprecated
-    embed_model: str = (
-        str(get_resource_path("models/sentence-transformers/all-minilm-l6-v2"))
-        if Path("models/sentence-transformers/all-minilm-l6-v2").exists()
-        else "sentence-transformers/all-minilm-l6-v2"
-    )
+    embed_model: str = "sentence-transformers/all-minilm-l6-v2"
 
     index_denylist: list[str] = field(default_factory=list)
 
@@ -49,6 +43,11 @@ class Config:
 @dataclass
 class LibrarianNotes:
     changes: int = 0
+
+@dataclass
+class DocResult:
+    cover_image_filepath: str
+    metadata: Metadata
 
 
 def load_from_file(cls, path, default_config):
@@ -74,12 +73,10 @@ class Librarian:
         self,
         librarian_path,
         default_config: Config,
-        ocr_client: OpenAILike,
         general_client: OpenAILike,
     ):
         """Initializes necessary attributes such as config, catalog manager, search manager, etc."""
 
-        self.ocr_client = ocr_client
         self.general_client = general_client
 
         self.librarian_path = Path(librarian_path)
@@ -93,7 +90,6 @@ class Librarian:
             path=self.librarian_path,
             embed_path=self.config.embed_model,
             general_llm=self.general_client,
-            ocr_llm=self.ocr_client,
             system_prompt=self.config.system_prompt,
             catalog_manager=self.catalog_manager,
             enable_enhanced_ocr=self.config.enable_enhanced_ocr,
@@ -118,6 +114,9 @@ class Librarian:
         self.search_manager.save()
 
     def is_database_mismatch(self) -> bool:
+        """
+        Checks whether there is a mismatch between the catalog and index and returns the condition.
+        """
         return self.search_manager.is_database_mismatch(
             lambda metadata: metadata.id in self.config.index_denylist
         )
@@ -139,9 +138,21 @@ class Librarian:
         else:
             cover_image = None
         return cover_image
+    
+    def get_all_documents(self) -> list[DocResult]:
+        """
+        Returns all the documents (and their associated cover images) contained within the library.
+        """
+        return [DocResult(cover_image_filepath=str(cover_image_path), metadata=metadata) for metadata, cover_image_path in self.catalog_manager]
 
-    def add(self, path: Path, book: Book):
-        """Adds the given book located in path to the library."""
+    def add(self, path: Path, metadata: Metadata):
+        """
+        Adds the given document located in path to the library.
+
+        Args:
+            path: Full filesystem path where the document is located
+            metadata: Metadata object populated with all the necessary attributes
+        """
 
         if not path.exists():
             raise ValueError(f"{path} doesn't exist")
@@ -154,25 +165,30 @@ class Librarian:
         cover_image = self.get_cover_image(path)
 
         # Add to catalog manager
-        self.catalog_manager.add(book, cover_image)
+        self.catalog_manager.add(metadata, cover_image)
 
         try:
             # Add to search manager
-            self.search_manager.add(path=path, id=id)
+            self.search_manager.add(path=path, id=metadata.id)
         except ValueError:
-            self.config.index_denylist.append(book.id)
+            self.config.index_denylist.append(metadata.id)
             save_to_file(self.config_path, self.config)  # autosave
             raise
         else:
             self.search_manager.index()
         finally:
             # path stuff
-            book_path = self.get_document_path(book)
+            book_path = self.get_document_path(metadata)
             os.makedirs(book_path.parent, exist_ok=True)
             move(path, book_path)
 
     def remove(self, id: str):
-        """Removes the book specified by id from librarian."""
+        """
+        Removes the document specified by id from librarian.
+
+        Args:
+            id: The document denoted by ID (UUID)
+        """
         # Count as a change
         self.librarian_notes.changes += 1
         save_to_file(self.notes_path, self.librarian_notes)  # autosave
@@ -185,6 +201,12 @@ class Librarian:
             save_to_file(self.config_path, self.config)  # autosave
 
     def edit(self, modified_metadata: Metadata):
+        """
+        Replaces the metadata of a document with the modified_metadata.
+
+        Args:
+            modified_metadata: The new, modified metadata
+        """
         # Count as a change
         self.librarian_notes.changes += 1
         save_to_file(self.notes_path, self.librarian_notes)  # autosave
@@ -216,8 +238,6 @@ class Librarian:
                 self.search_manager.add(
                     path=path,
                     id=id,
-                    enable_enhanced_ocr=self.config.enable_enhanced_ocr,
-                    ocr_client=self.client,
                 )
             except ValueError as err:
                 print(HTML(f"<ansired>Indexing failure: {err}</ansired>"))
@@ -227,13 +247,19 @@ class Librarian:
 
     def get_paths_ids(self) -> list[tuple]:
         return [
-            (self.get_document_path(book), book.id)
-            for book in self.catalog_manager
-            if book.id not in self.config.index_denylist
+            (self.get_document_path(metadata), metadata.id)
+            for metadata, cover_image in self.catalog_manager
+            if metadata.id not in self.config.index_denylist
         ]
 
     def search(self, query: str, search_type: Literal["semantic", "fts"] = "semantic"):
-        """Performs a semantic search based on the query by forwarding the request to the search manager."""
+        """
+        Performs a semantic search based on the query by forwarding the request to the search manager.
+
+        Args:
+            query: specifies the nature of the request
+            search_type: specifies the type of search (semantic or fts)
+        """
         if search_type == "semantic":
             results = self.search_manager.semantic_search(query)
         elif search_type == "fts":
@@ -243,9 +269,24 @@ class Librarian:
         return results
 
     def question(self, query: str):
+        """
+        Prompts the llm with query and returns the answer.
+
+        Args:
+            query: Specifies the nature of the request
+        """
         return self.search_manager.question(query)
 
     def sync(self, is_client: bool, password: str, server_addr: tuple = None):
+        """
+        Initiates the syncing sequence by specifying whether you are the server or client. The server sends the files, while the
+        receiver receives the files from the server (passive).
+
+        Args:
+            is_client: Specifies whether you could act as the client (True) or server (False)
+            password: Contains the passphrase in order to send data with encryption
+            server_addr: Is a tuple specifying either the server address (for the client to connect to) or the server binding address (typically set to 0.0.0.0:1230). Tuple example: ('0.0.0.0', 1230)
+        """
         home_dir = self.librarian_path.parent
         if is_client:
             client = SyncClient(password)
@@ -263,7 +304,19 @@ class Librarian:
             )
             server.start(home_dir)
 
+    def get_doc_path_by_id(self, id: str) -> str:
+        """
+        Returns the path to the document identified by the ID
+
+        Args:
+            id: The document denoted by id (UUID)
+        """
+        return str(self.get_document_path(self.info(id)[0]))
+
     def get_document_path(self, metadata: Metadata) -> Path:
+        """
+        Returns the path to the
+        """
         return Path(
             os.path.join(
                 self.librarian_path.parent,
@@ -282,11 +335,21 @@ class Librarian:
             pass
 
     def info(self, id: str) -> tuple:
-        """Returns a Book object identified by id."""
+        """
+        Returns a metadata object and the path to the cover image of the document.
+
+        Args:
+            id: The document denoted by id (UUID)
+        """
         return self.catalog_manager[id]
 
     def exists(self, id: str) -> bool:
-        """Returns whether or not the material identified by id exists in the catalog manager."""
+        """
+        Returns whether or not the material identified by id exists in the catalog manager.
+
+        Args:
+            id: The document denoted by id (UUID)
+        """
         return id in self.catalog_manager
 
     def __getitem__(self, id: str) -> tuple:

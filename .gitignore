@@ -2,3 +2,4 @@
 dist/
 .librarian/
 **/.DS_Store
+models/
